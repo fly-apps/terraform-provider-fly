@@ -24,7 +24,7 @@ type provider struct {
 }
 
 type providerData struct {
-	FlyToken types.String `tfsdk:"flytoken"`
+	FlyToken types.String `tfsdk:"fly_api_token"`
 }
 
 func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
@@ -44,7 +44,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 	if data.FlyToken.Null {
-		token = os.Getenv("FLY_TOKEN")
+		token = os.Getenv("FLY_API_TOKEN")
 	} else {
 		token = data.FlyToken.Value
 	}
@@ -88,8 +88,8 @@ func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSou
 func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
-			"flytoken": {
-				MarkdownDescription: "fly.io api token. If not set checks env for flytoken",
+			"fly_api_token": {
+				MarkdownDescription: "fly.io api token. If not set checks env for FLY_API_TOKEN",
 				Optional:            true,
 				Type:                types.StringType,
 			},
