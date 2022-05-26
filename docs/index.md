@@ -24,4 +24,4 @@ provider "scaffolding" {
 
 ### Optional
 
-- `flytoken` (String) fly.io api token. If not set checks env for flytoken
+- `fly_api_token` (String) fly.io api token. If not set checks env for FLY_API_TOKEN

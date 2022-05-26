@@ -14,8 +14,7 @@ Fly app resource
 
 ```terraform
 resource "fly_app" "exampleApp" {
-  name    = "hellofromterraform"
-  regions = ["ewr", "ord", "lax"]
+  name = "hellofromterraform"
 }
 ```
 
