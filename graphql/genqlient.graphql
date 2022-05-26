@@ -1,0 +1,242 @@
+query GetFullApp($name: String) {
+    app(name: $name) {
+        name
+        network
+        organization {
+            id
+        }
+        autoscaling {
+            preferredRegion
+            regions {
+                code
+            }
+        }
+        appUrl
+        hostname
+        id
+        status
+        deployed
+        currentRelease {
+            id
+        }
+        config {
+            definition
+        }
+        healthChecks {
+            nodes {
+                name
+                status
+            }
+        }
+        ipAddresses {
+            nodes {
+                address
+                id
+            }
+        }
+        role {
+            name
+        }
+    }
+}
+
+mutation CreateAppMutation($name: String, $organizationId: ID!) {
+    createApp(input: {name: $name, organizationId: $organizationId}) {
+        app {
+            name
+            status
+            organization {
+                id
+            }
+        }
+    }
+}
+
+
+mutation DeleteAppMutation($name: ID!) {
+    deleteApp(appId: $name) {
+        organization {
+            name
+        }
+    }
+}
+
+query OrgsQuery {
+    organizations {
+        nodes {
+            name
+            id
+        }
+    }
+}
+
+mutation UpdateAutoScaleConfigMutation($id: ID!, $regions: [AutoscaleRegionConfigInput!], $resetRegions: Boolean) {
+    updateAutoscaleConfig(input: {
+        resetRegions: $resetRegions,
+        regions: $regions,
+        appId: $id
+    }) {
+        app {
+            status
+            autoscaling {
+                regions {
+                    code
+                }
+            }
+        }
+    }
+}
+
+query VolumeQuery($app: String, $internal: String!) {
+    app(name: $app) {
+        volume(internalId: $internal) {
+            name
+            region
+            id
+            internalId
+            region
+            sizeGb
+        }
+    }
+}
+
+mutation CreateVolume($app: ID!, $name: String!, $region: String!, $sizeGb: Int!) {
+    createVolume(input: {appId: $app, name: $name, region: $region, sizeGb: $sizeGb}) {
+        volume {
+            name
+            region
+            id
+            internalId
+            region
+            sizeGb
+        }
+    }
+}
+
+
+mutation DeleteVolume($volume: ID!) {
+    deleteVolume(input: {volumeId: $volume}) {
+        clientMutationId
+    }
+}
+
+query IpAddressQuery($app: String, $addr: String!) {
+    app(name: $app) {
+        ipAddress(address: $addr) {
+            id
+            type
+            address
+            region
+        }
+    }
+}
+
+mutation AllocateIpAddress($app: ID!, $region: String, $addrType: IPAddressType) {
+    allocateIpAddress(input: {
+        appId: $app,
+        region: $region,
+        type: $addrType
+    }) {
+        ipAddress {
+            id
+            type
+            address
+            region
+        }
+    }
+}
+
+mutation ReleaseIpAddress($addressId: ID!) {
+    releaseIpAddress(input: {ipAddressId: $addressId}) {
+        app {
+            name
+        }
+    }
+}
+
+query GetCertificate($app: String!, $hostname: String!) {
+    app(name: $app) {
+        certificate(hostname: $hostname) {
+            id
+            dnsValidationInstructions
+            dnsValidationHostname
+            dnsValidationTarget
+            hostname
+            check
+        }
+    }
+}
+
+mutation AddCertificate($app: ID!, $hostname: String!) {
+    addCertificate(appId: $app, hostname: $hostname) {
+        certificate {
+            id
+            dnsValidationInstructions
+            dnsValidationHostname
+            dnsValidationTarget
+            hostname
+            check
+        }
+    }
+}
+
+mutation DeleteCertificate($app: ID!, $hostname: String!) {
+    deleteCertificate(appId: $app, hostname: $hostname) {
+        app {
+            name
+        }
+        certificate {
+            hostname
+            id
+        }
+    }
+}
+
+mutation CreatePostgresCluster(
+    $name: String,
+    $orgid: ID!,
+    $region: String,
+    $password: String,
+    $vmsize: String,
+    $volumesize: Int,
+    $count: Int,
+    $imageref: String
+) {
+    createPostgresCluster(input: {
+        name: $name,
+        organizationId: $orgid,
+        region: $region,
+        password: $password,
+        vmSize: $vmsize,
+        volumeSizeGb: $volumesize
+        count: $count,
+        imageRef: $imageref
+    }) {
+        app {
+            name
+        }
+        username
+        password
+    }
+}
+
+mutation AddWireguardPeer(
+   $input: AddWireGuardPeerInput!
+) {
+    addWireGuardPeer(input: $input) {
+        network
+        endpointip
+        peerip
+        pubkey
+    }
+}
+
+mutation RemoveWireguardPeer(
+    $input: RemoveWireGuardPeerInput!
+){
+    removeWireGuardPeer(input: $input) {
+        organization {
+            name
+        }
+    }
+}
