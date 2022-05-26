@@ -95,12 +95,8 @@ type MachineResponse struct {
 		Restart  struct {
 			Policy string `json:"policy"`
 		} `json:"restart"`
-		Services []struct {
-			InternalPort int    `json:"internal_port"`
-			Ports        []Port `json:"ports"`
-			Protocol     string `json:"protocol"`
-		} `json:"services"`
-		Guest struct {
+		Services []Service `json:"services"`
+		Guest    struct {
 			CPUKind  string `json:"cpu_kind"`
 			Cpus     int    `json:"cpus"`
 			MemoryMb int    `json:"memory_mb"`
@@ -243,20 +239,9 @@ func (mr flyMachineResource) ValidateOpenTunnel() (bool, error) {
 	}
 }
 
-func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	var data flyMachineResourceData
-
-	diags := req.Plan.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-
-	_, err := mr.ValidateOpenTunnel()
-	if err != nil {
-		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
-		return
-	}
-
+func TfServicesToServices(input []TfService) []Service {
 	var services []Service
-	for _, s := range data.Services {
+	for _, s := range input {
 		var ports []Port
 		for _, s := range s.Ports {
 			var handlers []string
@@ -274,6 +259,45 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 			InternalPort: s.InternalPort.Value,
 		})
 	}
+	return services
+}
+
+func ServicesToTfServices(input []Service) []TfService {
+	var tfservices []TfService
+	for _, s := range input {
+		var tfports []TfPort
+		for _, s := range s.Ports {
+			var handlers []types.String
+			for _, k := range s.Handlers {
+				handlers = append(handlers, types.String{Value: k})
+			}
+			tfports = append(tfports, TfPort{
+				Port:     types.Int64{Value: s.Port},
+				Handlers: handlers,
+			})
+		}
+		tfservices = append(tfservices, TfService{
+			Ports:        tfports,
+			Protocol:     types.String{Value: s.Protocol},
+			InternalPort: types.Int64{Value: int64(s.InternalPort)},
+		})
+	}
+	return tfservices
+}
+
+func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+	var data flyMachineResourceData
+
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+
+	_, err := mr.ValidateOpenTunnel()
+	if err != nil {
+		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
+		return
+	}
+
+	services := TfServicesToServices(data.Services)
 
 	createReq := CreateOrUpdateMachineRequest{
 		Name: data.Name.Value,
@@ -332,25 +356,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		env.Elems[key] = types.String{Value: value}
 	}
 
-	var tfservices []TfService
-	for _, s := range newMachine.Config.Services {
-		var tfports []TfPort
-		for _, s := range s.Ports {
-			var handlers []types.String
-			for _, k := range s.Handlers {
-				handlers = append(handlers, types.String{Value: k})
-			}
-			tfports = append(tfports, TfPort{
-				Port:     types.Int64{Value: s.Port},
-				Handlers: handlers,
-			})
-		}
-		tfservices = append(tfservices, TfService{
-			Ports:        tfports,
-			Protocol:     types.String{Value: s.Protocol},
-			InternalPort: types.Int64{Value: int64(s.InternalPort)},
-		})
-	}
+	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
 	data = flyMachineResourceData{
 		Name:     types.String{Value: newMachine.Name},
@@ -418,25 +424,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		env.Elems[key] = types.String{Value: value}
 	}
 
-	var tfservices []TfService
-	for _, s := range machine.Config.Services {
-		var tfports []TfPort
-		for _, s := range s.Ports {
-			var handlers []types.String
-			for _, k := range s.Handlers {
-				handlers = append(handlers, types.String{Value: k})
-			}
-			tfports = append(tfports, TfPort{
-				Port:     types.Int64{Value: s.Port},
-				Handlers: handlers,
-			})
-		}
-		tfservices = append(tfservices, TfService{
-			Ports:        tfports,
-			Protocol:     types.String{Value: s.Protocol},
-			InternalPort: types.Int64{Value: int64(s.InternalPort)},
-		})
-	}
+	tfservices := ServicesToTfServices(machine.Config.Services)
 
 	data = flyMachineResourceData{
 		Name:     types.String{Value: machine.Name},
@@ -485,25 +473,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		resp.Diagnostics.AddError("Can't mutate region of existing machine", "Can't swith region "+state.Name.Value+" to "+plan.Name.Value)
 	}
 
-	var services []Service
-	for _, s := range plan.Services {
-		var ports []Port
-		for _, s := range s.Ports {
-			var handlers []string
-			for _, k := range s.Handlers {
-				handlers = append(handlers, k.Value)
-			}
-			ports = append(ports, Port{
-				Port:     s.Port.Value,
-				Handlers: handlers,
-			})
-		}
-		services = append(services, Service{
-			Ports:        ports,
-			Protocol:     s.Protocol.Value,
-			InternalPort: s.InternalPort.Value,
-		})
-	}
+	services := TfServicesToServices(plan.Services)
 
 	updateReq := CreateOrUpdateMachineRequest{
 		Name: plan.Name.Value,
@@ -562,25 +532,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		env.Elems[key] = types.String{Value: value}
 	}
 
-	var tfservices []TfService
-	for _, s := range updatedMachine.Config.Services {
-		var tfports []TfPort
-		for _, s := range s.Ports {
-			var handlers []types.String
-			for _, k := range s.Handlers {
-				handlers = append(handlers, types.String{Value: k})
-			}
-			tfports = append(tfports, TfPort{
-				Port:     types.Int64{Value: s.Port},
-				Handlers: handlers,
-			})
-		}
-		tfservices = append(tfservices, TfService{
-			Ports:        tfports,
-			Protocol:     types.String{Value: s.Protocol},
-			InternalPort: types.Int64{Value: int64(s.InternalPort)},
-		})
-	}
+	tfservices := ServicesToTfServices(updatedMachine.Config.Services)
 
 	state = flyMachineResourceData{
 		Name:     types.String{Value: updatedMachine.Name},
