@@ -261,10 +261,15 @@ func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetOrganization() Create
 // CreateAppMutationCreateAppCreateAppPayloadAppOrganization includes the requested fields of the GraphQL type Organization.
 type CreateAppMutationCreateAppCreateAppPayloadAppOrganization struct {
 	Id string `json:"id"`
+	// Unique organization slug
+	Slug string `json:"slug"`
 }
 
 // GetId returns CreateAppMutationCreateAppCreateAppPayloadAppOrganization.Id, and is useful for accessing the field via an interface.
 func (v *CreateAppMutationCreateAppCreateAppPayloadAppOrganization) GetId() string { return v.Id }
+
+// GetSlug returns CreateAppMutationCreateAppCreateAppPayloadAppOrganization.Slug, and is useful for accessing the field via an interface.
+func (v *CreateAppMutationCreateAppCreateAppPayloadAppOrganization) GetSlug() string { return v.Slug }
 
 // CreateAppMutationResponse is returned by CreateAppMutation on success.
 type CreateAppMutationResponse struct {
@@ -817,10 +822,15 @@ func (v *GetFullAppAppIpAddressesIPAddressConnectionNodesIPAddress) GetId() stri
 // GetFullAppAppOrganization includes the requested fields of the GraphQL type Organization.
 type GetFullAppAppOrganization struct {
 	Id string `json:"id"`
+	// Unique organization slug
+	Slug string `json:"slug"`
 }
 
 // GetId returns GetFullAppAppOrganization.Id, and is useful for accessing the field via an interface.
 func (v *GetFullAppAppOrganization) GetId() string { return v.Id }
+
+// GetSlug returns GetFullAppAppOrganization.Slug, and is useful for accessing the field via an interface.
+func (v *GetFullAppAppOrganization) GetSlug() string { return v.Slug }
 
 // GetFullAppAppRole includes the requested fields of the GraphQL interface AppRole.
 //
@@ -1623,6 +1633,7 @@ mutation CreateAppMutation ($name: String, $organizationId: ID!) {
 			status
 			organization {
 				id
+				slug
 			}
 		}
 	}
@@ -1867,6 +1878,7 @@ query GetFullApp ($name: String) {
 		network
 		organization {
 			id
+			slug
 		}
 		autoscaling {
 			preferredRegion
