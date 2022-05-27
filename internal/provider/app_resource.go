@@ -23,7 +23,6 @@ type flyAppResourceType struct{}
 
 type flyAppResourceData struct {
 	Name types.String `tfsdk:"name"`
-	Id   types.String `tfsdk:"id"`
 	Org  types.String `tfsdk:"org"`
 }
 
@@ -36,12 +35,6 @@ func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 			"name": {
 				MarkdownDescription: "Name of application",
 				Required:            true,
-				Type:                types.StringType,
-			},
-			"id": {
-				MarkdownDescription: "Name of application",
-				Optional:            true,
-				Computed:            true,
 				Type:                types.StringType,
 			},
 			"org": {
@@ -83,6 +76,13 @@ func (r flyAppResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 			return
 		}
 		data.Org.Value = defaultOrg.Id
+	} else {
+		org, err := graphql.Organization(context.Background(), *r.provider.client, data.Org.Value)
+		if err != nil {
+			resp.Diagnostics.AddError("Could not resolve organization", err.Error())
+			return
+		}
+		data.Org.Value = org.Organization.Id
 	}
 
 	mresp, err := graphql.CreateAppMutation(context.Background(), *r.provider.client, data.Name.Value, data.Org.Value)
@@ -92,7 +92,6 @@ func (r flyAppResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	}
 
 	data = flyAppResourceData{
-		Id:   types.String{Value: mresp.CreateApp.App.Name},
 		Org:  types.String{Value: mresp.CreateApp.App.Organization.Id},
 		Name: types.String{Value: mresp.CreateApp.App.Name},
 	}
@@ -114,14 +113,7 @@ func (r flyAppResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 		return
 	}
 
-	var appKey string
-	if !data.Name.Unknown {
-		appKey = data.Id.Value
-	} else {
-		appKey = data.Name.Value
-	}
-
-	query, err := graphql.GetFullApp(context.Background(), *r.provider.client, appKey)
+	query, err := graphql.GetFullApp(context.Background(), *r.provider.client, data.Name.Value)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -136,7 +128,6 @@ func (r flyAppResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 
 	data = flyAppResourceData{
 		Name: types.String{Value: query.App.Name},
-		Id:   types.String{Value: query.App.Name},
 		Org:  types.String{Value: query.App.Organization.Id},
 	}
 
@@ -201,5 +192,5 @@ func (r flyAppResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 }
 
 func (r flyAppResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("name"), req, resp)
 }
