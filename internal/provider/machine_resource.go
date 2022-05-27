@@ -67,6 +67,7 @@ type MachineConfig struct {
 
 type CreateOrUpdateMachineRequest struct {
 	Name   string        `json:"name"`
+	Region string        `json:"region"`
 	Config MachineConfig `json:"config"`
 	Guest  *GuestConfig  `json:"guest,omitempty"`
 }
@@ -309,7 +310,8 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	services := TfServicesToServices(data.Services)
 
 	createReq := CreateOrUpdateMachineRequest{
-		Name: data.Name.Value,
+		Name:   data.Name.Value,
+		Region: data.Region.Value,
 		Config: MachineConfig{
 			Image:    data.Image.Value,
 			Services: services,
@@ -330,7 +332,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		data.Env.ElementsAs(context.Background(), &env, false)
 		createReq.Config.Env = env
 	}
-
+	tflog.Info(ctx, fmt.Sprintf("%+v", createReq))
 	body, _ := json.Marshal(createReq)
 	createResponse, err := mr.http.Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines", data.App.Value), "application/json", bytes.NewBuffer(body))
 	if err != nil {
@@ -474,7 +476,8 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	services := TfServicesToServices(plan.Services)
 
 	updateReq := CreateOrUpdateMachineRequest{
-		Name: plan.Name.Value,
+		Name:   plan.Name.Value,
+		Region: state.Region.Value,
 		Config: MachineConfig{
 			Image:    plan.Image.Value,
 			Services: services,
