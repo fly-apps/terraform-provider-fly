@@ -1030,6 +1030,23 @@ type IpAddressQueryResponse struct {
 // GetApp returns IpAddressQueryResponse.App, and is useful for accessing the field via an interface.
 func (v *IpAddressQueryResponse) GetApp() IpAddressQueryApp { return v.App }
 
+// OrganizationOrganization includes the requested fields of the GraphQL type Organization.
+type OrganizationOrganization struct {
+	Id string `json:"id"`
+}
+
+// GetId returns OrganizationOrganization.Id, and is useful for accessing the field via an interface.
+func (v *OrganizationOrganization) GetId() string { return v.Id }
+
+// OrganizationResponse is returned by Organization on success.
+type OrganizationResponse struct {
+	// Find an organization by ID
+	Organization OrganizationOrganization `json:"organization"`
+}
+
+// GetOrganization returns OrganizationResponse.Organization, and is useful for accessing the field via an interface.
+func (v *OrganizationResponse) GetOrganization() OrganizationOrganization { return v.Organization }
+
 // OrgsQueryOrganizationsOrganizationConnection includes the requested fields of the GraphQL type OrganizationConnection.
 // The GraphQL type's documentation follows.
 //
@@ -1425,6 +1442,14 @@ func (v *__IpAddressQueryInput) GetApp() string { return v.App }
 
 // GetAddr returns __IpAddressQueryInput.Addr, and is useful for accessing the field via an interface.
 func (v *__IpAddressQueryInput) GetAddr() string { return v.Addr }
+
+// __OrganizationInput is used internally by genqlient
+type __OrganizationInput struct {
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns __OrganizationInput.Slug, and is useful for accessing the field via an interface.
+func (v *__OrganizationInput) GetSlug() string { return v.Slug }
 
 // __ReleaseIpAddressInput is used internally by genqlient
 type __ReleaseIpAddressInput struct {
@@ -1910,6 +1935,33 @@ query IpAddressQuery ($app: String, $addr: String!) {
 			address
 			region
 		}
+	}
+}
+`,
+		&retval,
+		&__input,
+	)
+	return &retval, err
+}
+
+func Organization(
+	ctx context.Context,
+	client graphql.Client,
+	slug string,
+) (*OrganizationResponse, error) {
+	__input := __OrganizationInput{
+		Slug: slug,
+	}
+	var err error
+
+	var retval OrganizationResponse
+	err = client.MakeRequest(
+		ctx,
+		"Organization",
+		`
+query Organization ($slug: String) {
+	organization(slug: $slug) {
+		id
 	}
 }
 `,
