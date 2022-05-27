@@ -22,8 +22,6 @@ var _ tfsdk.ResourceType = flyMachineResourceType{}
 var _ tfsdk.Resource = flyMachineResource{}
 var _ tfsdk.ResourceWithImportState = flyMachineResource{}
 
-//TODO: build
-
 type flyMachineResourceType struct {
 	Token string
 }
@@ -72,8 +70,6 @@ type CreateOrUpdateMachineRequest struct {
 	Config MachineConfig `json:"config"`
 	Guest  *GuestConfig  `json:"guest,omitempty"`
 }
-
-// Api response
 
 type MachineResponse struct {
 	ID         string `json:"id"`
@@ -125,6 +121,18 @@ type flyMachineResourceData struct {
 	Env      types.Map    `tfsdk:"env"`
 
 	Services []TfService `tfsdk:"services"`
+}
+
+func KVToTfMap(kv map[string]string, elemType attr.Type) types.Map {
+	var TFMap types.Map
+	TFMap.ElemType = elemType
+	for key, value := range kv {
+		if TFMap.Elems == nil {
+			TFMap.Elems = map[string]attr.Value{}
+		}
+		TFMap.Elems[key] = types.String{Value: value}
+	}
+	return TFMap
 }
 
 func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
@@ -243,13 +251,13 @@ func TfServicesToServices(input []TfService) []Service {
 	var services []Service
 	for _, s := range input {
 		var ports []Port
-		for _, s := range s.Ports {
+		for _, j := range s.Ports {
 			var handlers []string
-			for _, k := range s.Handlers {
+			for _, k := range j.Handlers {
 				handlers = append(handlers, k.Value)
 			}
 			ports = append(ports, Port{
-				Port:     s.Port.Value,
+				Port:     j.Port.Value,
 				Handlers: handlers,
 			})
 		}
@@ -266,13 +274,13 @@ func ServicesToTfServices(input []Service) []TfService {
 	var tfservices []TfService
 	for _, s := range input {
 		var tfports []TfPort
-		for _, s := range s.Ports {
+		for _, j := range s.Ports {
 			var handlers []types.String
-			for _, k := range s.Handlers {
+			for _, k := range j.Handlers {
 				handlers = append(handlers, types.String{Value: k})
 			}
 			tfports = append(tfports, TfPort{
-				Port:     types.Int64{Value: s.Port},
+				Port:     types.Int64{Value: j.Port},
 				Handlers: handlers,
 			})
 		}
@@ -286,16 +294,16 @@ func ServicesToTfServices(input []Service) []TfService {
 }
 
 func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
-	var data flyMachineResourceData
-
-	diags := req.Plan.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-
 	_, err := mr.ValidateOpenTunnel()
 	if err != nil {
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
 		return
 	}
+
+	var data flyMachineResourceData
+
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
 
 	services := TfServicesToServices(data.Services)
 
@@ -323,8 +331,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	}
 
 	body, _ := json.Marshal(createReq)
-	var prettyJSON bytes.Buffer
-	_ = json.Indent(&prettyJSON, body, "", "\t")
+
 	createResponse, err := mr.http.Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines", data.App.Value), "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
@@ -347,14 +354,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		return
 	}
 
-	var env types.Map
-	env.ElemType = types.StringType
-	for key, value := range newMachine.Config.Env {
-		if env.Elems == nil {
-			env.Elems = map[string]attr.Value{}
-		}
-		env.Elems[key] = types.String{Value: value}
-	}
+	env := KVToTfMap(newMachine.Config.Env, types.StringType)
 
 	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
@@ -379,15 +379,15 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 }
 
 func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	var data flyMachineResourceData
-
-	diags := req.State.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-
 	_, err := mr.ValidateOpenTunnel()
 	if err != nil {
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
 	}
+
+	var data flyMachineResourceData
+
+	diags := req.State.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
 
 	readResponse, err := mr.http.Get(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s", data.App.Value, data.Id.Value))
 	if err != nil {
@@ -415,14 +415,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		return
 	}
 
-	var env types.Map
-	env.ElemType = types.StringType
-	for key, value := range machine.Config.Env {
-		if env.Elems == nil {
-			env.Elems = map[string]attr.Value{}
-		}
-		env.Elems[key] = types.String{Value: value}
-	}
+	env := KVToTfMap(machine.Config.Env, types.StringType)
 
 	tfservices := ServicesToTfServices(machine.Config.Services)
 
@@ -463,8 +456,13 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	}
 
 	var state flyMachineResourceData
+
 	diags = resp.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if !state.Name.Unknown && plan.Name.Value != state.Name.Value {
 		resp.Diagnostics.AddError("Can't mutate name of existing machine", "Can't swith name "+state.Name.Value+" to "+plan.Name.Value)
@@ -523,14 +521,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		return
 	}
 
-	var env types.Map
-	env.ElemType = types.StringType
-	for key, value := range updatedMachine.Config.Env {
-		if env.Elems == nil {
-			env.Elems = map[string]attr.Value{}
-		}
-		env.Elems[key] = types.String{Value: value}
-	}
+	env := KVToTfMap(updatedMachine.Config.Env, types.StringType)
 
 	tfservices := ServicesToTfServices(updatedMachine.Config.Services)
 
