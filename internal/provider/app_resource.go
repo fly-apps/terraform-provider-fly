@@ -22,8 +22,9 @@ var _ tfsdk.ResourceWithImportState = flyAppResource{}
 type flyAppResourceType struct{}
 
 type flyAppResourceData struct {
-	Name types.String `tfsdk:"name"`
-	Org  types.String `tfsdk:"org"`
+	Name  types.String `tfsdk:"name"`
+	Org   types.String `tfsdk:"org"`
+	OrgId types.String `tfsdk:"orgid"`
 }
 
 func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
@@ -40,7 +41,12 @@ func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 			"org": {
 				Computed:            true,
 				Optional:            true,
-				MarkdownDescription: "Optional org ID to operate upon",
+				MarkdownDescription: "Optional org slug to operate upon",
+				Type:                types.StringType,
+			},
+			"orgid": {
+				Computed:            true,
+				MarkdownDescription: "readonly orgid",
 				Type:                types.StringType,
 			},
 		},
@@ -82,7 +88,7 @@ func (r flyAppResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 			resp.Diagnostics.AddError("Could not resolve organization", err.Error())
 			return
 		}
-		data.Org.Value = org.Organization.Id
+		data.OrgId.Value = org.Organization.Id
 	}
 
 	mresp, err := graphql.CreateAppMutation(context.Background(), *r.provider.client, data.Name.Value, data.Org.Value)
@@ -92,8 +98,9 @@ func (r flyAppResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	}
 
 	data = flyAppResourceData{
-		Org:  types.String{Value: mresp.CreateApp.App.Organization.Id},
-		Name: types.String{Value: mresp.CreateApp.App.Name},
+		Org:   types.String{Value: mresp.CreateApp.App.Organization.Slug},
+		OrgId: types.String{Value: mresp.CreateApp.App.Organization.Id},
+		Name:  types.String{Value: mresp.CreateApp.App.Name},
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -127,8 +134,9 @@ func (r flyAppResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	}
 
 	data = flyAppResourceData{
-		Name: types.String{Value: query.App.Name},
-		Org:  types.String{Value: query.App.Organization.Id},
+		Name:  types.String{Value: query.App.Name},
+		Org:   types.String{Value: query.App.Organization.Slug},
+		OrgId: types.String{Value: query.App.Organization.Id},
 	}
 
 	diags = resp.State.Set(ctx, &data)

@@ -4,6 +4,7 @@ query GetFullApp($name: String) {
         network
         organization {
             id
+            slug
         }
         autoscaling {
             preferredRegion
@@ -47,6 +48,7 @@ mutation CreateAppMutation($name: String, $organizationId: ID!) {
             status
             organization {
                 id
+                slug
             }
         }
     }
