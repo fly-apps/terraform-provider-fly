@@ -141,7 +141,8 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 		Attributes: map[string]tfsdk.Attribute{
 			"name": {
 				MarkdownDescription: "machine name",
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Type:                types.StringType,
 			},
 			"region": {
@@ -331,7 +332,6 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	}
 
 	body, _ := json.Marshal(createReq)
-
 	createResponse, err := mr.http.Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines", data.App.Value), "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
