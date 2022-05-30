@@ -3,10 +3,10 @@ package provider
 import (
 	"bytes"
 	"context"
-	"dov.dev/fly/fly-provider/internal/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/fly-apps/terraform-provider-fly/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -59,10 +59,25 @@ type TfService struct {
 	InternalPort types.Int64  `tfsdk:"internal_port"`
 }
 
+type MachineMount struct {
+	Encrypted bool   `json:"encrypted"`
+	Path      string `json:"path"`
+	SizeGb    int    `json:"size_gb"`
+	Volume    string `json:"volume"`
+}
+
+type TfMachineMount struct {
+	Encrypted bool   `tfsdk:"encrypted"`
+	Path      string `tfsdk:"path"`
+	SizeGb    int    `tfsdk:"size_gb"`
+	Volume    string `tfsdk:"volume"`
+}
+
 type MachineConfig struct {
 	Image    string            `json:"image"`
 	Env      map[string]string `json:"env,omitempty"`
-	Services []Service
+	Mounts   []MachineMount    `json:"mounts,omitempty"`
+	Services []Service         `json:"services"`
 }
 
 type CreateOrUpdateMachineRequest struct {
@@ -92,7 +107,8 @@ type MachineResponse struct {
 		Restart  struct {
 			Policy string `json:"policy"`
 		} `json:"restart"`
-		Services []Service `json:"services"`
+		Services []Service      `json:"services"`
+		Mounts   []MachineMount `json:"mounts"`
 		Guest    struct {
 			CPUKind  string `json:"cpu_kind"`
 			Cpus     int    `json:"cpus"`
@@ -121,7 +137,8 @@ type flyMachineResourceData struct {
 	CpuType  types.String `tfsdk:"cputype"`
 	Env      types.Map    `tfsdk:"env"`
 
-	Services []TfService `tfsdk:"services"`
+	Mounts   []TfMachineMount `tfsdk:"mounts"`
+	Services []TfService      `tfsdk:"services"`
 }
 
 func KVToTfMap(kv map[string]string, elemType attr.Type) types.Map {
@@ -189,6 +206,28 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 				Optional:            true,
 				Computed:            true,
 				Type:                types.MapType{ElemType: types.StringType},
+			},
+			"mounts": {
+				MarkdownDescription: "Volume mounts",
+				Optional:            true,
+				Attributes: tfsdk.ListNestedAttributes(map[string]tfsdk.Attribute{
+					"encrypted": {
+						Required: true,
+						Type:     types.BoolType,
+					},
+					"path": {
+						Required: true,
+						Type:     types.StringType,
+					},
+					"size_gb": {
+						Required: true,
+						Type:     types.Int64Type,
+					},
+					"volume": {
+						Required: true,
+						Type:     types.StringType,
+					},
+				}, tfsdk.ListNestedAttributesOptions{}),
 			},
 			"services": {
 				MarkdownDescription: "services",
@@ -332,6 +371,18 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		data.Env.ElementsAs(context.Background(), &env, false)
 		createReq.Config.Env = env
 	}
+	if len(data.Mounts) > 0 {
+		var mounts []MachineMount
+		for _, m := range data.Mounts {
+			mounts = append(mounts, MachineMount{
+				Encrypted: m.Encrypted,
+				Path:      m.Path,
+				SizeGb:    m.SizeGb,
+				Volume:    m.Volume,
+			})
+		}
+		createReq.Config.Mounts = mounts
+	}
 	tflog.Info(ctx, fmt.Sprintf("%+v", createReq))
 	body, _ := json.Marshal(createReq)
 	createResponse, err := mr.http.Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines", data.App.Value), "application/json", bytes.NewBuffer(body))
@@ -371,6 +422,19 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		CpuType:  types.String{Value: newMachine.Config.Guest.CPUKind},
 		Env:      env,
 		Services: tfservices,
+	}
+
+	if len(newMachine.Config.Mounts) > 0 {
+		var tfmounts []TfMachineMount
+		for _, m := range newMachine.Config.Mounts {
+			tfmounts = append(tfmounts, TfMachineMount{
+				Encrypted: m.Encrypted,
+				Path:      m.Path,
+				SizeGb:    m.SizeGb,
+				Volume:    m.Volume,
+			})
+		}
+		data.Mounts = tfmounts
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -432,6 +496,19 @@ func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		CpuType:  types.String{Value: machine.Config.Guest.CPUKind},
 		Env:      env,
 		Services: tfservices,
+	}
+
+	if len(machine.Config.Mounts) > 0 {
+		var tfmounts []TfMachineMount
+		for _, m := range machine.Config.Mounts {
+			tfmounts = append(tfmounts, TfMachineMount{
+				Encrypted: m.Encrypted,
+				Path:      m.Path,
+				SizeGb:    m.SizeGb,
+				Volume:    m.Volume,
+			})
+		}
+		data.Mounts = tfmounts
 	}
 
 	diags = resp.State.Set(ctx, &data)

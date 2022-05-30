@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"dov.dev/fly/fly-provider/internal/wg"
+	"github.com/fly-apps/terraform-provider-fly/internal/wg"
 	"time"
 )
 
