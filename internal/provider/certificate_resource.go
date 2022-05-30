@@ -2,9 +2,9 @@ package provider
 
 import (
 	"context"
-	"dov.dev/fly/fly-provider/graphql"
 	"errors"
 	"fmt"
+	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"

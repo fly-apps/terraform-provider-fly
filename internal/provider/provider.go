@@ -2,9 +2,9 @@ package provider
 
 import (
 	"context"
-	"dov.dev/fly/fly-provider/internal/utils"
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
+	"github.com/fly-apps/terraform-provider-fly/internal/utils"
 	"net/http"
 	"os"
 	"time"
