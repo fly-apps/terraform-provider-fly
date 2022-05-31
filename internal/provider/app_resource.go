@@ -81,7 +81,8 @@ func (r flyAppResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 			resp.Diagnostics.AddError("Could not detect default organization", err.Error())
 			return
 		}
-		data.Org.Value = defaultOrg.Id
+		data.OrgId.Value = defaultOrg.Id
+		data.Org.Value = defaultOrg.Name
 	} else {
 		org, err := graphql.Organization(context.Background(), *r.provider.client, data.Org.Value)
 		if err != nil {
@@ -90,8 +91,7 @@ func (r flyAppResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		}
 		data.OrgId.Value = org.Organization.Id
 	}
-
-	mresp, err := graphql.CreateAppMutation(context.Background(), *r.provider.client, data.Name.Value, data.Org.Value)
+	mresp, err := graphql.CreateAppMutation(context.Background(), *r.provider.client, data.Name.Value, data.OrgId.Value)
 	if err != nil {
 		resp.Diagnostics.AddError("Create app failed", err.Error())
 		return
