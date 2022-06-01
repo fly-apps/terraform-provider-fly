@@ -27,7 +27,10 @@ resource "fly_app" "exampleApp" {
 
 ### Optional
 
-- `id` (String) Name of application
-- `org` (String) Optional org ID to operate upon
+- `org` (String) Optional org slug to operate upon
+
+### Read-Only
+
+- `orgid` (String) readonly orgid
 
 

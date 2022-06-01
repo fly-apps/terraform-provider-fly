@@ -61,7 +61,6 @@ resource "fly_machine" "exampleMachine" {
 
 - `app` (String) fly app
 - `image` (String) docker image
-- `name` (String) machine name
 - `region` (String) machine region
 - `services` (Attributes List) services (see [below for nested schema](#nestedatt--services))
 
@@ -71,6 +70,8 @@ resource "fly_machine" "exampleMachine" {
 - `cputype` (String) cpu type
 - `env` (Map of String) Optional environment variables, keys and values must be strings
 - `memorymb` (Number) memory mb
+- `mounts` (Attributes List) Volume mounts (see [below for nested schema](#nestedatt--mounts))
+- `name` (String) machine name
 
 ### Read-Only
 
@@ -92,5 +93,17 @@ Required:
 
 - `handlers` (List of String) How the edge should process requests
 - `port` (Number) External port
+
+
+
+<a id="nestedatt--mounts"></a>
+### Nested Schema for `mounts`
+
+Optional:
+
+- `encrypted` (Boolean)
+- `path` (String)
+- `size_gb` (Number)
+- `volume` (String)
 
 
