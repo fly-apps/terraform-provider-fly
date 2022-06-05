@@ -8,15 +8,24 @@ terraform {
 
 resource "fly_app" "exampleApp" {
   name = "hellofromterraform"
+  org  = "fly-external"
 }
 
-#resource "fly_volume" "exampleVol" {
-#  name       = "exampleVolume"
-#  app        = "hellofromterraform"
-#  size       = 10
-#  region     = "ewr"
-#  depends_on = [fly_app.exampleApp]
-#}
+resource "fly_volume" "exampleVol" {
+  name       = "exampleVolume"
+  app        = "hellofromterraform"
+  size       = 10
+  region     = "ewr"
+  depends_on = [fly_app.exampleApp]
+}
+
+resource "fly_volume" "secondVolume" {
+  name       = "secondVolume"
+  app        = "hellofromterraform"
+  size       = 10
+  region     = "ewr"
+  depends_on = [fly_app.exampleApp]
+}
 
 resource "fly_ip" "exampleIp" {
   app        = "hellofromterraform"
@@ -38,11 +47,12 @@ resource "fly_cert" "exampleCert" {
 
 resource "fly_machine" "exampleMachine" {
   app    = "hellofromterraform"
-  region = "iad"
-  name   = "extremelyuniquenamelikesoveryunique8"
+  region = "ewr"
+  name   = "extremelyuniquenamelikesoveryunique18"
   image  = "nginx"
   env = {
     key = "value"
+    otherKey = "theothervalue"
   }
   services = [
     {
@@ -74,7 +84,17 @@ resource "fly_machine" "exampleMachine" {
       "internal_port" : 8089
     }
   ]
-  depends_on = [fly_app.exampleApp]
+  mounts = [
+    {
+      path   = "/volume_mount"
+      volume = fly_volume.exampleVol.id
+    },
+    {
+      path   = "/the_other_volume_mount"
+      volume = fly_volume.secondVolume.id
+    }
+  ]
+  depends_on = [fly_app.exampleApp, fly_volume.exampleVol, fly_volume.secondVolume]
 }
 
 output "machineID" {
