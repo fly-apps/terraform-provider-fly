@@ -1,28 +1,21 @@
-# Terraform Provider testing workflow.
 name: Tests
 
-# This GitHub action runs your tests for each pull request and push.
-# Optionally, you can turn it on using a schedule for regular testing.
-#on:
-#  pull_request:
-#    paths-ignore:
-#      - 'README.md'
-#  push:
-#    paths-ignore:
-#      - 'README.md'
+on:
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+  push:
+    paths-ignore:
+      - 'README.md'
 
-# Testing only needs permissions to read the repository contents.
 permissions:
   contents: read
 
-# Default values to simplify job configurations below.
 env:
-  # Go language version to use for building. This value should also be updated
-  # in the release workflow if changed.
-  GO_VERSION: '1.17'
+  GO_VERSION: '1.18'
+
 
 jobs:
-  # Ensure project builds before running testing matrix
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -48,7 +41,6 @@ jobs:
           git diff --compact-summary --exit-code || \
             (echo; echo "Unexpected difference in directories after code generation. Run 'go generate ./...' command and commit."; exit 1)
 
-  # Run acceptance tests in a matrix with Terraform CLI versions
   test:
     name: Terraform Provider Acceptance Tests
     needs: build
@@ -57,7 +49,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # list whatever Terraform versions here you would like to support
         terraform:
           - '1.0.*'
           - '1.1.*'
@@ -73,5 +64,6 @@ jobs:
       - run: go mod download
       - env:
           TF_ACC: "1"
+          FLY_TF_TEST_APP: acctestapp
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10

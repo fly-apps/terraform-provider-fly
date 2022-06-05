@@ -6,6 +6,7 @@ terraform.tfplan
 terraform.tfstate
 #Binary exlusion
 terraform-provider-fly-provider
+terraform-provider-fly
 bin/
 dist/
 modules-dev/
