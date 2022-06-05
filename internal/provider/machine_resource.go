@@ -161,12 +161,18 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 				MarkdownDescription: "machine name",
 				Optional:            true,
 				Computed:            true,
-				Type:                types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.RequiresReplace(),
+				},
+				Type: types.StringType,
 			},
 			"region": {
 				MarkdownDescription: "machine region",
 				Required:            true,
-				Type:                types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.RequiresReplace(),
+				},
+				Type: types.StringType,
 			},
 			"id": {
 				MarkdownDescription: "machine id",
@@ -665,7 +671,7 @@ func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourc
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
 	}
 
-	maxRetries := 10
+	maxRetries := 50
 	deleted := false
 
 	for i := 0; i < maxRetries; i++ {
@@ -686,7 +692,7 @@ func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourc
 				resp.Diagnostics.AddError("Failed to read machine response", err.Error())
 				return
 			}
-			if machine.State == "started" {
+			if machine.State == "started" || machine.State == "starting" {
 				tflog.Info(ctx, "Stopping machine")
 				_, _ = mr.http.Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s/stop", data.App.Value, data.Id.Value), "application/json", nil)
 			}
