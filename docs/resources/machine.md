@@ -102,8 +102,8 @@ Required:
 Optional:
 
 - `encrypted` (Boolean)
-- `path` (String)
+- `path` (String) Path for volume to be mounted on vm
 - `size_gb` (Number)
-- `volume` (String)
+- `volume` (String) Name or ID of volume
 
 
