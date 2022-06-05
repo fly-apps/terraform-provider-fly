@@ -56,8 +56,15 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
+	enableTracing := false
+	_, ok := os.LookupEnv("DEBUG")
+	if ok {
+		enableTracing = true
+		resp.Diagnostics.AddWarning("Debug mode enabled", "Debug mode enabled, this will add the Fly-Force-Trace header to all graphql requests")
+	}
+
 	// TODO: Make timeout configurable
-	h := http.Client{Timeout: 60 * time.Second, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: token, Ctx: ctx}}
+	h := http.Client{Timeout: 60 * time.Second, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: token, Ctx: ctx, EnableDebugTrace: enableTracing}}
 	client := graphql.NewClient("https://api.fly.io/graphql", &h)
 	p.client = &client
 	p.token = token
