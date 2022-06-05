@@ -51,7 +51,7 @@ resource "fly_machine" "exampleMachine" {
   name   = "extremelyuniquenamelikesoveryunique18"
   image  = "nginx"
   env = {
-    key = "value"
+    key      = "value"
     otherKey = "theothervalue"
   }
   services = [
