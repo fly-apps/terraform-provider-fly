@@ -217,8 +217,9 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 						Type:     types.BoolType,
 					},
 					"path": {
-						Required: true,
-						Type:     types.StringType,
+						Required:            true,
+						MarkdownDescription: "Path for volume to be mounted on vm",
+						Type:                types.StringType,
 					},
 					"size_gb": {
 						Optional: true,
@@ -226,8 +227,9 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 						Type:     types.Int64Type,
 					},
 					"volume": {
-						Required: true,
-						Type:     types.StringType,
+						Required:            true,
+						MarkdownDescription: "Name or ID of volume",
+						Type:                types.StringType,
 					},
 				}, tfsdk.ListNestedAttributesOptions{}),
 			},
