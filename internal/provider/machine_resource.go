@@ -60,17 +60,10 @@ type TfService struct {
 }
 
 type MachineMount struct {
-	Encrypted bool   `json:"encrypted"`
+	Encrypted bool   `json:"encrypted,omitempty"`
 	Path      string `json:"path"`
-	SizeGb    int    `json:"size_gb"`
+	SizeGb    int    `json:"size_gb,omitempty"`
 	Volume    string `json:"volume"`
-}
-
-type TfMachineMount struct {
-	Encrypted bool   `tfsdk:"encrypted"`
-	Path      string `tfsdk:"path"`
-	SizeGb    int    `tfsdk:"size_gb"`
-	Volume    string `tfsdk:"volume"`
 }
 
 type MachineConfig struct {
@@ -84,7 +77,7 @@ type CreateOrUpdateMachineRequest struct {
 	Name   string        `json:"name"`
 	Region string        `json:"region"`
 	Config MachineConfig `json:"config"`
-	Guest  *GuestConfig  `json:"guest,omitempty"`
+	Guest  GuestConfig   `json:"guest,omitempty"`
 }
 
 type MachineResponse struct {
@@ -139,6 +132,13 @@ type flyMachineResourceData struct {
 
 	Mounts   []TfMachineMount `tfsdk:"mounts"`
 	Services []TfService      `tfsdk:"services"`
+}
+
+type TfMachineMount struct {
+	Encrypted types.Bool   `tfsdk:"encrypted"`
+	Path      types.String `tfsdk:"path"`
+	SizeGb    types.Int64  `tfsdk:"size_gb"`
+	Volume    types.String `tfsdk:"volume"`
 }
 
 func KVToTfMap(kv map[string]string, elemType attr.Type) types.Map {
@@ -212,7 +212,8 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 				Optional:            true,
 				Attributes: tfsdk.ListNestedAttributes(map[string]tfsdk.Attribute{
 					"encrypted": {
-						Required: true,
+						Optional: true,
+						Computed: true,
 						Type:     types.BoolType,
 					},
 					"path": {
@@ -220,7 +221,8 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 						Type:     types.StringType,
 					},
 					"size_gb": {
-						Required: true,
+						Optional: true,
+						Computed: true,
 						Type:     types.Int64Type,
 					},
 					"volume": {
@@ -345,9 +347,10 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
-
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	services := TfServicesToServices(data.Services)
-
 	createReq := CreateOrUpdateMachineRequest{
 		Name:   data.Name.Value,
 		Region: data.Region.Value,
@@ -375,10 +378,10 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		var mounts []MachineMount
 		for _, m := range data.Mounts {
 			mounts = append(mounts, MachineMount{
-				Encrypted: m.Encrypted,
-				Path:      m.Path,
-				SizeGb:    m.SizeGb,
-				Volume:    m.Volume,
+				Encrypted: m.Encrypted.Value,
+				Path:      m.Path.Value,
+				SizeGb:    int(m.SizeGb.Value),
+				Volume:    m.Volume.Value,
 			})
 		}
 		createReq.Config.Mounts = mounts
@@ -428,10 +431,10 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		var tfmounts []TfMachineMount
 		for _, m := range newMachine.Config.Mounts {
 			tfmounts = append(tfmounts, TfMachineMount{
-				Encrypted: m.Encrypted,
-				Path:      m.Path,
-				SizeGb:    m.SizeGb,
-				Volume:    m.Volume,
+				Encrypted: types.Bool{Value: m.Encrypted},
+				Path:      types.String{Value: m.Path},
+				SizeGb:    types.Int64{Value: int64(m.SizeGb)},
+				Volume:    types.String{Value: m.Volume},
 			})
 		}
 		data.Mounts = tfmounts
@@ -502,10 +505,10 @@ func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		var tfmounts []TfMachineMount
 		for _, m := range machine.Config.Mounts {
 			tfmounts = append(tfmounts, TfMachineMount{
-				Encrypted: m.Encrypted,
-				Path:      m.Path,
-				SizeGb:    m.SizeGb,
-				Volume:    m.Volume,
+				Encrypted: types.Bool{Value: m.Encrypted},
+				Path:      types.String{Value: m.Path},
+				SizeGb:    types.Int64{Value: int64(m.SizeGb)},
+				Volume:    types.String{Value: m.Volume},
 			})
 		}
 		data.Mounts = tfmounts
@@ -575,6 +578,18 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		plan.Env.ElementsAs(context.Background(), &env, false)
 		updateReq.Config.Env = env
 	}
+	if len(plan.Mounts) > 0 {
+		var mounts []MachineMount
+		for _, m := range plan.Mounts {
+			mounts = append(mounts, MachineMount{
+				Encrypted: m.Encrypted.Value,
+				Path:      m.Path.Value,
+				SizeGb:    int(m.SizeGb.Value),
+				Volume:    m.Volume.Value,
+			})
+		}
+		updateReq.Config.Mounts = mounts
+	}
 
 	body, _ := json.Marshal(updateReq)
 	var prettyJSON bytes.Buffer
@@ -616,6 +631,19 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		CpuType:  types.String{Value: updatedMachine.Config.Guest.CPUKind},
 		Env:      env,
 		Services: tfservices,
+	}
+
+	if len(updatedMachine.Config.Mounts) > 0 {
+		var tfmounts []TfMachineMount
+		for _, m := range updatedMachine.Config.Mounts {
+			tfmounts = append(tfmounts, TfMachineMount{
+				Encrypted: types.Bool{Value: m.Encrypted},
+				Path:      types.String{Value: m.Path},
+				SizeGb:    types.Int64{Value: int64(m.SizeGb)},
+				Volume:    types.String{Value: m.Volume},
+			})
+		}
+		state.Mounts = tfmounts
 	}
 
 	resp.State.Set(ctx, state)
