@@ -1,0 +1,35 @@
+name: Docgen
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: '1.18'
+
+jobs:
+  docgen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download deps
+        run: |
+          go mod download
+          go get github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Doc update
+          file_pattern: examples/ docs/
