@@ -29,6 +29,10 @@ jobs:
           go mod download
           go get github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
+      - name: Gen docs
+        run: |
+          go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Doc update
