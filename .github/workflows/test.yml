@@ -52,6 +52,6 @@ jobs:
       - env:
           TF_ACC: "1"
           FLY_TF_TEST_APP: acctestapp
-          FLY_API_TOKEN: ${{ .secrets.FLY_AUTH_TOKEN_CI }}
+          FLY_API_TOKEN: ${{ secrets.FLY_AUTH_TOKEN_CI }}
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10
