@@ -47,6 +47,10 @@ jobs:
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl proxy 4280:4280 _api.internal -a acctestapp &
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_AUTH_TOKEN_CI }}
       - uses: actions/checkout@v3
       - run: go mod download
       - env:
