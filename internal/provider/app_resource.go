@@ -22,9 +22,10 @@ var _ tfsdk.ResourceWithImportState = flyAppResource{}
 type flyAppResourceType struct{}
 
 type flyAppResourceData struct {
-	Name  types.String `tfsdk:"name"`
-	Org   types.String `tfsdk:"org"`
-	OrgId types.String `tfsdk:"orgid"`
+	Name   types.String `tfsdk:"name"`
+	Org    types.String `tfsdk:"org"`
+	OrgId  types.String `tfsdk:"orgid"`
+	AppUrl types.String `tfsdk:"appUrl"`
 }
 
 func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
@@ -47,6 +48,11 @@ func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 			"orgid": {
 				Computed:            true,
 				MarkdownDescription: "readonly orgid",
+				Type:                types.StringType,
+			},
+			"appUrl": {
+				Computed:            true,
+				MarkdownDescription: "readonly appUrl",
 				Type:                types.StringType,
 			},
 		},
@@ -98,9 +104,10 @@ func (r flyAppResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	}
 
 	data = flyAppResourceData{
-		Org:   types.String{Value: mresp.CreateApp.App.Organization.Slug},
-		OrgId: types.String{Value: mresp.CreateApp.App.Organization.Id},
-		Name:  types.String{Value: mresp.CreateApp.App.Name},
+		Org:    types.String{Value: mresp.CreateApp.App.Organization.Slug},
+		OrgId:  types.String{Value: mresp.CreateApp.App.Organization.Id},
+		Name:   types.String{Value: mresp.CreateApp.App.Name},
+		AppUrl: types.String{Value: mresp.CreateApp.App.AppUrl},
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -134,9 +141,10 @@ func (r flyAppResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	}
 
 	data = flyAppResourceData{
-		Name:  types.String{Value: query.App.Name},
-		Org:   types.String{Value: query.App.Organization.Slug},
-		OrgId: types.String{Value: query.App.Organization.Id},
+		Name:   types.String{Value: query.App.Name},
+		Org:    types.String{Value: query.App.Organization.Slug},
+		OrgId:  types.String{Value: query.App.Organization.Id},
+		AppUrl: types.String{Value: query.App.AppUrl},
 	}
 
 	diags = resp.State.Set(ctx, &data)
