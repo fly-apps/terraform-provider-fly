@@ -1,3 +1,5 @@
+![Fly.io logo](/imgs/fly.svg)
+
 # fly.io terraform provider
 
 [![Tests](https://github.com/fly-apps/terraform-provider-fly/actions/workflows/test.yml/badge.svg)](https://github.com/fly-apps/terraform-provider-fly/actions/workflows/test.yml)
