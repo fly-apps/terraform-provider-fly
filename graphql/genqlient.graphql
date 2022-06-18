@@ -50,6 +50,7 @@ mutation CreateAppMutation($name: String, $organizationId: ID!) {
                 id
                 slug
             }
+            appUrl
         }
     }
 }

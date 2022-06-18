@@ -245,6 +245,7 @@ type CreateAppMutationCreateAppCreateAppPayloadApp struct {
 	Status string `json:"status"`
 	// Organization that owns this app
 	Organization CreateAppMutationCreateAppCreateAppPayloadAppOrganization `json:"organization"`
+	AppUrl       string                                                    `json:"appUrl"`
 }
 
 // GetName returns CreateAppMutationCreateAppCreateAppPayloadApp.Name, and is useful for accessing the field via an interface.
@@ -257,6 +258,9 @@ func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetStatus() string { ret
 func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetOrganization() CreateAppMutationCreateAppCreateAppPayloadAppOrganization {
 	return v.Organization
 }
+
+// GetAppUrl returns CreateAppMutationCreateAppCreateAppPayloadApp.AppUrl, and is useful for accessing the field via an interface.
+func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetAppUrl() string { return v.AppUrl }
 
 // CreateAppMutationCreateAppCreateAppPayloadAppOrganization includes the requested fields of the GraphQL type Organization.
 type CreateAppMutationCreateAppCreateAppPayloadAppOrganization struct {
@@ -1635,6 +1639,7 @@ mutation CreateAppMutation ($name: String, $organizationId: ID!) {
 				id
 				slug
 			}
+			appUrl
 		}
 	}
 }
