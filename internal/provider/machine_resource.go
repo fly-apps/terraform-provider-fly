@@ -68,7 +68,7 @@ type MachineMount struct {
 
 type MachineConfig struct {
 	Image    string            `json:"image"`
-	Env      map[string]string `json:"env,omitempty"`
+	Env      map[string]string `json:"env"`
 	Mounts   []MachineMount    `json:"mounts,omitempty"`
 	Services []Service         `json:"services"`
 }
@@ -278,7 +278,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 func (mr flyMachineResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
-	h := http.Client{Timeout: 60 * time.Second, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: mr.Token, Ctx: ctx}}
+	h := http.Client{Timeout: 2 * time.Minute, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: mr.Token, Ctx: ctx}}
 	return flyMachineResource{
 		provider: provider,
 		http:     h,
@@ -448,6 +448,13 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		data.Mounts = tfmounts
 	}
 
+	tflog.Info(ctx, "Gonna wait for the machine to start")
+	_, err = mr.http.Get(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s/wait?instance_id=%s", data.App.Value, data.Id.Value, newMachine.InstanceID))
+	if err != nil {
+		tflog.Info(ctx, "Waiting errored")
+	}
+	tflog.Info(ctx, "Done waiting")
+
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -581,11 +588,17 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	if !plan.MemoryMb.Unknown {
 		updateReq.Guest.MemoryMb = int(plan.MemoryMb.Value)
 	}
-	if !plan.Env.Unknown {
+	if plan.Env.Null {
+		env := map[string]string{}
+		updateReq.Config.Env = env
+	} else if !plan.Env.Unknown {
 		var env map[string]string
 		plan.Env.ElementsAs(context.Background(), &env, false)
 		updateReq.Config.Env = env
+	} else if !state.Env.Unknown {
+		updateReq.Config.Env = map[string]string{}
 	}
+
 	if len(plan.Mounts) > 0 {
 		var mounts []MachineMount
 		for _, m := range plan.Mounts {
@@ -654,6 +667,13 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		state.Mounts = tfmounts
 	}
 
+	tflog.Info(ctx, "Gonna wait for the machine to update")
+	_, err = mr.http.Get(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s/wait?instance_id=%s", state.App.Value, state.Id.Value, updatedMachine.InstanceID))
+	if err != nil {
+		tflog.Info(ctx, "Waiting errored")
+	}
+	tflog.Info(ctx, "Done waiting")
+
 	resp.State.Set(ctx, state)
 	if resp.Diagnostics.HasError() {
 		return
@@ -692,7 +712,7 @@ func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourc
 				resp.Diagnostics.AddError("Failed to read machine response", err.Error())
 				return
 			}
-			if machine.State == "started" || machine.State == "starting" {
+			if machine.State == "started" || machine.State == "starting" || machine.State == "replacing" {
 				tflog.Info(ctx, "Stopping machine")
 				_, _ = mr.http.Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s/stop", data.App.Value, data.Id.Value), "application/json", nil)
 			}
@@ -700,7 +720,7 @@ func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourc
 				tflog.Info(ctx, "In the process of stopping or destroying")
 				time.Sleep(5 * time.Second)
 			}
-			if machine.State == "stopped" {
+			if machine.State == "stopped" || machine.State == "replaced" {
 				tflog.Info(ctx, "Destroying")
 				req, err := http.NewRequest("DELETE", fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s", data.App.Value, data.Id.Value), nil)
 				if err != nil {
