@@ -1,4 +1,4 @@
-![Fly.io logo](/imgs/fly.svg)
+<img src="/imgs/fly.svg" alt="Fly.io logo"/>
 
 # fly.io terraform provider
 
