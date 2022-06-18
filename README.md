@@ -1,4 +1,4 @@
-<img src="/imgs/fly.svg" alt="Fly.io logo"/>
+![Fly.io logo](https://raw.githubusercontent.com/fly-apps/terraform-provider-fly/main/imgs/fly.svg?sanitize=true)
 
 # fly.io terraform provider
 
