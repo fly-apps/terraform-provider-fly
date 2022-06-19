@@ -25,7 +25,7 @@ type flyAppResourceData struct {
 	Name   types.String `tfsdk:"name"`
 	Org    types.String `tfsdk:"org"`
 	OrgId  types.String `tfsdk:"orgid"`
-	AppUrl types.String `tfsdk:"appUrl"`
+	AppUrl types.String `tfsdk:"appurl"`
 }
 
 func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
@@ -50,7 +50,7 @@ func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 				MarkdownDescription: "readonly orgid",
 				Type:                types.StringType,
 			},
-			"appUrl": {
+			"appurl": {
 				Computed:            true,
 				MarkdownDescription: "readonly appUrl",
 				Type:                types.StringType,
