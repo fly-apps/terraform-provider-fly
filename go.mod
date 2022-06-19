@@ -8,8 +8,9 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.9.1
 	github.com/hashicorp/terraform-plugin-log v0.4.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.17.0
+	github.com/imroc/req/v3 v3.13.1
 	github.com/miekg/dns v1.1.49
-	github.com/vektah/gqlparser/v2 v2.4.4
+	github.com/vektah/gqlparser/v2 v2.4.5
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.zx2c4.com/wireguard v0.0.0-20220407013110-ef5c587f782d
 	golang.zx2c4.com/wireguard/tun/netstack v0.0.0-20220407013110-ef5c587f782d
@@ -41,7 +42,6 @@ require (
 	github.com/hashicorp/terraform-registry-address v0.0.0-20220510144317-d78f4a47ae27 // indirect
 	github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 // indirect
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
-	github.com/imroc/req/v3 v3.13.1 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -67,6 +67,5 @@ require (
 	google.golang.org/genproto v0.0.0-20220608133413-ed9918b62aac // indirect
 	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gvisor.dev/gvisor v0.0.0-20211020211948-f76a604701b6 // indirect
 )
