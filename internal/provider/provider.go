@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/internal/utils"
+	hreq "github.com/imroc/req/v3"
 	"net/http"
 	"os"
 	"time"
@@ -21,6 +22,7 @@ type provider struct {
 	version    string
 	token      string
 	client     *graphql.Client
+	httpClient *hreq.Client
 }
 
 type providerData struct {
@@ -63,6 +65,10 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		resp.Diagnostics.AddWarning("Debug mode enabled", "Debug mode enabled, this will add the Fly-Force-Trace header to all graphql requests")
 	}
 
+	if enableTracing {
+		p.httpClient.SetCommonHeader("Fly-Force-Trace", "true")
+	}
+
 	// TODO: Make timeout configurable
 	h := http.Client{Timeout: 60 * time.Second, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: token, Ctx: ctx, EnableDebugTrace: enableTracing}}
 	client := graphql.NewClient("https://api.fly.io/graphql", &h)
@@ -73,6 +79,12 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 }
 
 func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
+	hclient := hreq.C()
+	p.httpClient = hclient
+
+	p.httpClient.SetCommonHeader("Authorization", "Bearer "+p.token)
+	p.httpClient.SetTimeout(2 * time.Minute)
+
 	return map[string]tfsdk.ResourceType{
 		"fly_app":    flyAppResourceType{},
 		"fly_volume": flyVolumeResourceType{},
@@ -80,6 +92,7 @@ func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceT
 		"fly_cert":   flyCertResourceType{},
 		"fly_machine": flyMachineResourceType{
 			Token: p.token,
+			Http:  p.httpClient,
 		},
 	}, nil
 }
