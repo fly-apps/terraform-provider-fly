@@ -116,7 +116,6 @@ func (ir flyIpResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	addr := data.Address.Value
 	app := data.Appid.Value
 
-	//tflog.Info(ctx, fmt.Sprintf("%s, %s", app, addr))
 	query, err := graphql.IpAddressQuery(context.Background(), *ir.provider.client, app, addr)
 	tflog.Info(ctx, fmt.Sprintf("Query res: for %s %s %+v", app, addr, query))
 	var errList gqlerror.List
