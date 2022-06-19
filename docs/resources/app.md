@@ -31,7 +31,7 @@ resource "fly_app" "exampleApp" {
 
 ### Read-Only
 
-- `appUrl` (String) readonly appUrl
+- `appurl` (String) readonly appUrl
 - `orgid` (String) readonly orgid
 
 
