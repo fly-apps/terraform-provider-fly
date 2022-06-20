@@ -1517,17 +1517,9 @@ func AddCertificate(
 	app string,
 	hostname string,
 ) (*AddCertificateResponse, error) {
-	__input := __AddCertificateInput{
-		App:      app,
-		Hostname: hostname,
-	}
-	var err error
-
-	var retval AddCertificateResponse
-	err = client.MakeRequest(
-		ctx,
-		"AddCertificate",
-		`
+	req := &graphql.Request{
+		OpName: "AddCertificate",
+		Query: `
 mutation AddCertificate ($app: ID!, $hostname: String!) {
 	addCertificate(appId: $app, hostname: $hostname) {
 		certificate {
@@ -1541,10 +1533,23 @@ mutation AddCertificate ($app: ID!, $hostname: String!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__AddCertificateInput{
+			App:      app,
+			Hostname: hostname,
+		},
+	}
+	var err error
+
+	var data AddCertificateResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func AddWireguardPeer(
@@ -1552,16 +1557,9 @@ func AddWireguardPeer(
 	client graphql.Client,
 	input AddWireGuardPeerInput,
 ) (*AddWireguardPeerResponse, error) {
-	__input := __AddWireguardPeerInput{
-		Input: input,
-	}
-	var err error
-
-	var retval AddWireguardPeerResponse
-	err = client.MakeRequest(
-		ctx,
-		"AddWireguardPeer",
-		`
+	req := &graphql.Request{
+		OpName: "AddWireguardPeer",
+		Query: `
 mutation AddWireguardPeer ($input: AddWireGuardPeerInput!) {
 	addWireGuardPeer(input: $input) {
 		network
@@ -1571,10 +1569,22 @@ mutation AddWireguardPeer ($input: AddWireGuardPeerInput!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__AddWireguardPeerInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data AddWireguardPeerResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func AllocateIpAddress(
@@ -1584,18 +1594,9 @@ func AllocateIpAddress(
 	region string,
 	addrType IPAddressType,
 ) (*AllocateIpAddressResponse, error) {
-	__input := __AllocateIpAddressInput{
-		App:      app,
-		Region:   region,
-		AddrType: addrType,
-	}
-	var err error
-
-	var retval AllocateIpAddressResponse
-	err = client.MakeRequest(
-		ctx,
-		"AllocateIpAddress",
-		`
+	req := &graphql.Request{
+		OpName: "AllocateIpAddress",
+		Query: `
 mutation AllocateIpAddress ($app: ID!, $region: String, $addrType: IPAddressType) {
 	allocateIpAddress(input: {appId:$app,region:$region,type:$addrType}) {
 		ipAddress {
@@ -1607,10 +1608,24 @@ mutation AllocateIpAddress ($app: ID!, $region: String, $addrType: IPAddressType
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__AllocateIpAddressInput{
+			App:      app,
+			Region:   region,
+			AddrType: addrType,
+		},
+	}
+	var err error
+
+	var data AllocateIpAddressResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func CreateAppMutation(
@@ -1619,17 +1634,9 @@ func CreateAppMutation(
 	name string,
 	organizationId string,
 ) (*CreateAppMutationResponse, error) {
-	__input := __CreateAppMutationInput{
-		Name:           name,
-		OrganizationId: organizationId,
-	}
-	var err error
-
-	var retval CreateAppMutationResponse
-	err = client.MakeRequest(
-		ctx,
-		"CreateAppMutation",
-		`
+	req := &graphql.Request{
+		OpName: "CreateAppMutation",
+		Query: `
 mutation CreateAppMutation ($name: String, $organizationId: ID!) {
 	createApp(input: {name:$name,organizationId:$organizationId}) {
 		app {
@@ -1644,10 +1651,23 @@ mutation CreateAppMutation ($name: String, $organizationId: ID!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__CreateAppMutationInput{
+			Name:           name,
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data CreateAppMutationResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func CreatePostgresCluster(
@@ -1662,23 +1682,9 @@ func CreatePostgresCluster(
 	count int,
 	imageref string,
 ) (*CreatePostgresClusterResponse, error) {
-	__input := __CreatePostgresClusterInput{
-		Name:       name,
-		Orgid:      orgid,
-		Region:     region,
-		Password:   password,
-		Vmsize:     vmsize,
-		Volumesize: volumesize,
-		Count:      count,
-		Imageref:   imageref,
-	}
-	var err error
-
-	var retval CreatePostgresClusterResponse
-	err = client.MakeRequest(
-		ctx,
-		"CreatePostgresCluster",
-		`
+	req := &graphql.Request{
+		OpName: "CreatePostgresCluster",
+		Query: `
 mutation CreatePostgresCluster ($name: String, $orgid: ID!, $region: String, $password: String, $vmsize: String, $volumesize: Int, $count: Int, $imageref: String) {
 	createPostgresCluster(input: {name:$name,organizationId:$orgid,region:$region,password:$password,vmSize:$vmsize,volumeSizeGb:$volumesize,count:$count,imageRef:$imageref}) {
 		app {
@@ -1689,10 +1695,29 @@ mutation CreatePostgresCluster ($name: String, $orgid: ID!, $region: String, $pa
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__CreatePostgresClusterInput{
+			Name:       name,
+			Orgid:      orgid,
+			Region:     region,
+			Password:   password,
+			Vmsize:     vmsize,
+			Volumesize: volumesize,
+			Count:      count,
+			Imageref:   imageref,
+		},
+	}
+	var err error
+
+	var data CreatePostgresClusterResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func CreateVolume(
@@ -1703,19 +1728,9 @@ func CreateVolume(
 	region string,
 	sizeGb int,
 ) (*CreateVolumeResponse, error) {
-	__input := __CreateVolumeInput{
-		App:    app,
-		Name:   name,
-		Region: region,
-		SizeGb: sizeGb,
-	}
-	var err error
-
-	var retval CreateVolumeResponse
-	err = client.MakeRequest(
-		ctx,
-		"CreateVolume",
-		`
+	req := &graphql.Request{
+		OpName: "CreateVolume",
+		Query: `
 mutation CreateVolume ($app: ID!, $name: String!, $region: String!, $sizeGb: Int!) {
 	createVolume(input: {appId:$app,name:$name,region:$region,sizeGb:$sizeGb}) {
 		volume {
@@ -1729,10 +1744,25 @@ mutation CreateVolume ($app: ID!, $name: String!, $region: String!, $sizeGb: Int
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__CreateVolumeInput{
+			App:    app,
+			Name:   name,
+			Region: region,
+			SizeGb: sizeGb,
+		},
+	}
+	var err error
+
+	var data CreateVolumeResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func DeleteAppMutation(
@@ -1740,16 +1770,9 @@ func DeleteAppMutation(
 	client graphql.Client,
 	name string,
 ) (*DeleteAppMutationResponse, error) {
-	__input := __DeleteAppMutationInput{
-		Name: name,
-	}
-	var err error
-
-	var retval DeleteAppMutationResponse
-	err = client.MakeRequest(
-		ctx,
-		"DeleteAppMutation",
-		`
+	req := &graphql.Request{
+		OpName: "DeleteAppMutation",
+		Query: `
 mutation DeleteAppMutation ($name: ID!) {
 	deleteApp(appId: $name) {
 		organization {
@@ -1758,10 +1781,22 @@ mutation DeleteAppMutation ($name: ID!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__DeleteAppMutationInput{
+			Name: name,
+		},
+	}
+	var err error
+
+	var data DeleteAppMutationResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func DeleteCertificate(
@@ -1770,17 +1805,9 @@ func DeleteCertificate(
 	app string,
 	hostname string,
 ) (*DeleteCertificateResponse, error) {
-	__input := __DeleteCertificateInput{
-		App:      app,
-		Hostname: hostname,
-	}
-	var err error
-
-	var retval DeleteCertificateResponse
-	err = client.MakeRequest(
-		ctx,
-		"DeleteCertificate",
-		`
+	req := &graphql.Request{
+		OpName: "DeleteCertificate",
+		Query: `
 mutation DeleteCertificate ($app: ID!, $hostname: String!) {
 	deleteCertificate(appId: $app, hostname: $hostname) {
 		app {
@@ -1793,10 +1820,23 @@ mutation DeleteCertificate ($app: ID!, $hostname: String!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__DeleteCertificateInput{
+			App:      app,
+			Hostname: hostname,
+		},
+	}
+	var err error
+
+	var data DeleteCertificateResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func DeleteVolume(
@@ -1804,26 +1844,31 @@ func DeleteVolume(
 	client graphql.Client,
 	volume string,
 ) (*DeleteVolumeResponse, error) {
-	__input := __DeleteVolumeInput{
-		Volume: volume,
-	}
-	var err error
-
-	var retval DeleteVolumeResponse
-	err = client.MakeRequest(
-		ctx,
-		"DeleteVolume",
-		`
+	req := &graphql.Request{
+		OpName: "DeleteVolume",
+		Query: `
 mutation DeleteVolume ($volume: ID!) {
 	deleteVolume(input: {volumeId:$volume}) {
 		clientMutationId
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__DeleteVolumeInput{
+			Volume: volume,
+		},
+	}
+	var err error
+
+	var data DeleteVolumeResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func GetCertificate(
@@ -1832,17 +1877,9 @@ func GetCertificate(
 	app string,
 	hostname string,
 ) (*GetCertificateResponse, error) {
-	__input := __GetCertificateInput{
-		App:      app,
-		Hostname: hostname,
-	}
-	var err error
-
-	var retval GetCertificateResponse
-	err = client.MakeRequest(
-		ctx,
-		"GetCertificate",
-		`
+	req := &graphql.Request{
+		OpName: "GetCertificate",
+		Query: `
 query GetCertificate ($app: String!, $hostname: String!) {
 	app(name: $app) {
 		certificate(hostname: $hostname) {
@@ -1856,10 +1893,23 @@ query GetCertificate ($app: String!, $hostname: String!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__GetCertificateInput{
+			App:      app,
+			Hostname: hostname,
+		},
+	}
+	var err error
+
+	var data GetCertificateResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func GetFullApp(
@@ -1867,16 +1917,9 @@ func GetFullApp(
 	client graphql.Client,
 	name string,
 ) (*GetFullAppResponse, error) {
-	__input := __GetFullAppInput{
-		Name: name,
-	}
-	var err error
-
-	var retval GetFullAppResponse
-	err = client.MakeRequest(
-		ctx,
-		"GetFullApp",
-		`
+	req := &graphql.Request{
+		OpName: "GetFullApp",
+		Query: `
 query GetFullApp ($name: String) {
 	app(name: $name) {
 		name
@@ -1921,10 +1964,22 @@ query GetFullApp ($name: String) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__GetFullAppInput{
+			Name: name,
+		},
+	}
+	var err error
+
+	var data GetFullAppResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func IpAddressQuery(
@@ -1933,17 +1988,9 @@ func IpAddressQuery(
 	app string,
 	addr string,
 ) (*IpAddressQueryResponse, error) {
-	__input := __IpAddressQueryInput{
-		App:  app,
-		Addr: addr,
-	}
-	var err error
-
-	var retval IpAddressQueryResponse
-	err = client.MakeRequest(
-		ctx,
-		"IpAddressQuery",
-		`
+	req := &graphql.Request{
+		OpName: "IpAddressQuery",
+		Query: `
 query IpAddressQuery ($app: String, $addr: String!) {
 	app(name: $app) {
 		ipAddress(address: $addr) {
@@ -1955,10 +2002,23 @@ query IpAddressQuery ($app: String, $addr: String!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__IpAddressQueryInput{
+			App:  app,
+			Addr: addr,
+		},
+	}
+	var err error
+
+	var data IpAddressQueryResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func Organization(
@@ -1966,39 +2026,40 @@ func Organization(
 	client graphql.Client,
 	slug string,
 ) (*OrganizationResponse, error) {
-	__input := __OrganizationInput{
-		Slug: slug,
-	}
-	var err error
-
-	var retval OrganizationResponse
-	err = client.MakeRequest(
-		ctx,
-		"Organization",
-		`
+	req := &graphql.Request{
+		OpName: "Organization",
+		Query: `
 query Organization ($slug: String) {
 	organization(slug: $slug) {
 		id
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__OrganizationInput{
+			Slug: slug,
+		},
+	}
+	var err error
+
+	var data OrganizationResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func OrgsQuery(
 	ctx context.Context,
 	client graphql.Client,
 ) (*OrgsQueryResponse, error) {
-	var err error
-
-	var retval OrgsQueryResponse
-	err = client.MakeRequest(
-		ctx,
-		"OrgsQuery",
-		`
+	req := &graphql.Request{
+		OpName: "OrgsQuery",
+		Query: `
 query OrgsQuery {
 	organizations {
 		nodes {
@@ -2008,10 +2069,19 @@ query OrgsQuery {
 	}
 }
 `,
-		&retval,
-		nil,
+	}
+	var err error
+
+	var data OrgsQueryResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func ReleaseIpAddress(
@@ -2019,16 +2089,9 @@ func ReleaseIpAddress(
 	client graphql.Client,
 	addressId string,
 ) (*ReleaseIpAddressResponse, error) {
-	__input := __ReleaseIpAddressInput{
-		AddressId: addressId,
-	}
-	var err error
-
-	var retval ReleaseIpAddressResponse
-	err = client.MakeRequest(
-		ctx,
-		"ReleaseIpAddress",
-		`
+	req := &graphql.Request{
+		OpName: "ReleaseIpAddress",
+		Query: `
 mutation ReleaseIpAddress ($addressId: ID!) {
 	releaseIpAddress(input: {ipAddressId:$addressId}) {
 		app {
@@ -2037,10 +2100,22 @@ mutation ReleaseIpAddress ($addressId: ID!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__ReleaseIpAddressInput{
+			AddressId: addressId,
+		},
+	}
+	var err error
+
+	var data ReleaseIpAddressResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func RemoveWireguardPeer(
@@ -2048,16 +2123,9 @@ func RemoveWireguardPeer(
 	client graphql.Client,
 	input RemoveWireGuardPeerInput,
 ) (*RemoveWireguardPeerResponse, error) {
-	__input := __RemoveWireguardPeerInput{
-		Input: input,
-	}
-	var err error
-
-	var retval RemoveWireguardPeerResponse
-	err = client.MakeRequest(
-		ctx,
-		"RemoveWireguardPeer",
-		`
+	req := &graphql.Request{
+		OpName: "RemoveWireguardPeer",
+		Query: `
 mutation RemoveWireguardPeer ($input: RemoveWireGuardPeerInput!) {
 	removeWireGuardPeer(input: $input) {
 		organization {
@@ -2066,10 +2134,22 @@ mutation RemoveWireguardPeer ($input: RemoveWireGuardPeerInput!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__RemoveWireguardPeerInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data RemoveWireguardPeerResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func UpdateAutoScaleConfigMutation(
@@ -2079,18 +2159,9 @@ func UpdateAutoScaleConfigMutation(
 	regions []AutoscaleRegionConfigInput,
 	resetRegions bool,
 ) (*UpdateAutoScaleConfigMutationResponse, error) {
-	__input := __UpdateAutoScaleConfigMutationInput{
-		Id:           id,
-		Regions:      regions,
-		ResetRegions: resetRegions,
-	}
-	var err error
-
-	var retval UpdateAutoScaleConfigMutationResponse
-	err = client.MakeRequest(
-		ctx,
-		"UpdateAutoScaleConfigMutation",
-		`
+	req := &graphql.Request{
+		OpName: "UpdateAutoScaleConfigMutation",
+		Query: `
 mutation UpdateAutoScaleConfigMutation ($id: ID!, $regions: [AutoscaleRegionConfigInput!], $resetRegions: Boolean) {
 	updateAutoscaleConfig(input: {resetRegions:$resetRegions,regions:$regions,appId:$id}) {
 		app {
@@ -2104,10 +2175,24 @@ mutation UpdateAutoScaleConfigMutation ($id: ID!, $regions: [AutoscaleRegionConf
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__UpdateAutoScaleConfigMutationInput{
+			Id:           id,
+			Regions:      regions,
+			ResetRegions: resetRegions,
+		},
+	}
+	var err error
+
+	var data UpdateAutoScaleConfigMutationResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func VolumeQuery(
@@ -2116,17 +2201,9 @@ func VolumeQuery(
 	app string,
 	internal string,
 ) (*VolumeQueryResponse, error) {
-	__input := __VolumeQueryInput{
-		App:      app,
-		Internal: internal,
-	}
-	var err error
-
-	var retval VolumeQueryResponse
-	err = client.MakeRequest(
-		ctx,
-		"VolumeQuery",
-		`
+	req := &graphql.Request{
+		OpName: "VolumeQuery",
+		Query: `
 query VolumeQuery ($app: String, $internal: String!) {
 	app(name: $app) {
 		volume(internalId: $internal) {
@@ -2140,8 +2217,21 @@ query VolumeQuery ($app: String, $internal: String!) {
 	}
 }
 `,
-		&retval,
-		&__input,
+		Variables: &__VolumeQueryInput{
+			App:      app,
+			Internal: internal,
+		},
+	}
+	var err error
+
+	var data VolumeQueryResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
