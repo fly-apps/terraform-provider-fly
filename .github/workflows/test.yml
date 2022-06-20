@@ -20,7 +20,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    if: github.event.action == 'push' || contains(github.event.pull_request.labels.*.name, 'safe to test')
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'safe to test')
     timeout-minutes: 5
     steps:
       - uses: actions/setup-go@v3
