@@ -235,7 +235,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 						MarkdownDescription: "Name or ID of volume",
 						Type:                types.StringType,
 					},
-				}, tfsdk.ListNestedAttributesOptions{}),
+				}),
 			},
 			"services": {
 				MarkdownDescription: "services",
@@ -255,7 +255,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 								Required:            true,
 								Type:                types.ListType{ElemType: types.StringType},
 							},
-						}, tfsdk.ListNestedAttributesOptions{}),
+						}),
 					},
 					"protocol": {
 						MarkdownDescription: "network protocol",
@@ -267,13 +267,13 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 						Required:            true,
 						Type:                types.Int64Type,
 					},
-				}, tfsdk.ListNestedAttributesOptions{}),
+				}),
 			},
 		},
 	}, nil
 }
 
-func (mr flyMachineResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (mr flyMachineResourceType) NewResource(_ context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return flyMachineResource{
