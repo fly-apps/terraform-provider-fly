@@ -1,7 +1,8 @@
 name: Tests
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [labeled]
     paths-ignore:
       - 'README.md'
   push:
@@ -19,6 +20,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    if: github.event.action == 'push' || contains(github.event.pull_request.labels.*.name, 'safe to test')
     timeout-minutes: 5
     steps:
       - uses: actions/setup-go@v3
