@@ -24,7 +24,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func main() {
 	ctx := context.Background()
-	token := os.Getenv("FLY_TOKEN")
+	token := os.Getenv("FLY_API_TOKEN")
 	h := http.Client{Timeout: 60 * time.Second, Transport: &transport{underlyingTransport: http.DefaultTransport, token: token, ctx: ctx}}
 	client := graphql.NewClient("https://api.fly.io/graphql", &h)
 	tunnel, err := wg.Establish(ctx, "P7lZB0nw2ylg8smzmMLA9eVLAQuRL6", "ewr", "DAlperin", token, &client)
