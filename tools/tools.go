@@ -35,6 +35,13 @@ func main() {
 
 	tunnelClient := tunnel.NewHttpClient()
 
+	answer, err := tunnel.LookupAAAA(ctx, "google.com")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	fmt.Println(answer)
+
 	tresp, err := tunnelClient.HttpClient.Get(fmt.Sprintf("http://%s:4280/v1/apps/dovdotdev", "_api.internal"))
 	if err != nil {
 		fmt.Println(err.Error())

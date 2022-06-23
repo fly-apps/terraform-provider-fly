@@ -20,12 +20,12 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"strconv"
+	"time"
 )
 
 type PrivateKey device.NoisePrivateKey
 type PublicKey device.NoisePublicKey
-
-//type IPNet net.IPNet
 
 type Config struct {
 	LocalPrivateKey PrivateKey
@@ -189,6 +189,7 @@ func doConnect(ctx context.Context, state *WireGuardState) (*Tunnel, error) {
 	wgDev := device.NewDevice(tunDev, conn.NewDefaultBind(), device.NewLogger(cfg.LogLevel, "(fly-ssh) "))
 
 	wgConf := bytes.NewBuffer(nil)
+	fmt.Println(cfg.RemoteNetwork)
 	fmt.Println("ENDPOINT ADDR:", endpointAddr)
 	fmt.Fprintf(wgConf, "private_key=%s\n", cfg.LocalPrivateKey.ToHex())
 	fmt.Fprintf(wgConf, "public_key=%s\n", cfg.RemotePublicKey.ToHex())
@@ -226,8 +227,11 @@ func (t *Tunnel) Resolver() *net.Resolver {
 }
 
 func C25519pair() (string, string) {
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+
 	var private [32]byte
-	_, err := rand.Read(private[:])
+	_, err := r.Read(private[:])
 	if err != nil {
 		panic(fmt.Sprintf("reading from random: %s", err))
 	}
@@ -289,6 +293,25 @@ func (t *Tunnel) Down() error {
 	return nil
 }
 
+func (t *Tunnel) LookupAAAA(ctx context.Context, name string) ([]net.IP, error) {
+	var m dns.Msg
+	_ = m.SetQuestion(dns.Fqdn(name), dns.TypeAAAA)
+
+	r, err := t.QueryDNS(ctx, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]net.IP, 0, len(r.Answer))
+
+	for _, a := range r.Answer {
+		ip := a.(*dns.AAAA).AAAA
+		results = append(results, ip)
+	}
+
+	return results, nil
+}
+
 func (t *Tunnel) QueryDNS(ctx context.Context, msg *dns.Msg) (*dns.Msg, error) {
 	client := dns.Client{
 		Net: "tcp",
@@ -311,7 +334,8 @@ func (t *Tunnel) QueryDNS(ctx context.Context, msg *dns.Msg) (*dns.Msg, error) {
 }
 
 func Establish(ctx context.Context, org string, region string, username string, token string, client *rawgql.Client) (*Tunnel, error) {
-	peerName := "terraform-tunnel-" + username
+	fmt.Println("terraform-tunnel-" + username + strconv.FormatInt(time.Now().Unix(), 10))
+	peerName := "terraform-tunnel-" + username + strconv.FormatInt(time.Now().Unix(), 10)
 	tflog.Info(ctx, peerName)
 	public, private := C25519pair()
 
