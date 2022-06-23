@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	hreq "github.com/imroc/req/v3"
 	"net/http"
 	"time"
 )
@@ -19,14 +18,11 @@ var _ tfsdk.ResourceType = flyMachineResourceType{}
 var _ tfsdk.Resource = flyMachineResource{}
 var _ tfsdk.ResourceWithImportState = flyMachineResource{}
 
-type flyMachineResourceType struct {
-	Token string
-	Http  *hreq.Client
-}
+type flyMachineResourceType struct{}
 
 type flyMachineResource struct {
 	provider provider
-	http     hreq.Client
+	endpoint string
 }
 
 type GuestConfig struct {
@@ -278,13 +274,12 @@ func (mr flyMachineResourceType) NewResource(_ context.Context, in tfsdk.Provide
 
 	return flyMachineResource{
 		provider: provider,
-		http:     *mr.Http,
 	}, diags
 }
 
 func (mr flyMachineResource) ValidateOpenTunnel() (bool, error) {
 	//HACK: This is not a good way to do this, but I'm tired. Future me, please fix this.
-	response, err := mr.http.R().Get("http://127.0.0.1:4280/bogus")
+	response, err := mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s/bogus", mr.provider.httpEndpoint))
 	if err != nil {
 		return false, err
 	}
@@ -393,8 +388,8 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	}
 
 	var newMachine MachineResponse
-
-	createResponse, err := mr.http.R().SetBody(createReq).SetResult(&newMachine).Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines", data.App.Value))
+	tflog.Info(ctx, fmt.Sprintf("%+v", createReq))
+	createResponse, err := mr.provider.httpClient.R().SetBody(createReq).SetResult(&newMachine).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", mr.provider.httpEndpoint, data.App.Value))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
 		return
@@ -435,7 +430,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		data.Mounts = tfmounts
 	}
 
-	_, err = mr.http.R().Get(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s/wait?instance_id=%s", data.App.Value, data.Id.Value, newMachine.InstanceID))
+	_, err = mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/wait?instance_id=%s", mr.provider.httpEndpoint, data.App.Value, data.Id.Value, newMachine.InstanceID))
 	if err != nil {
 		//FIXME(?): For now we just assume that the orcestrator is in fact going to faithfully execute our request
 		tflog.Info(ctx, "Waiting errored")
@@ -461,7 +456,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 
 	var machine MachineResponse
 
-	_, err = mr.http.R().SetResult(&machine).Get(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s", data.App.Value, data.Id.Value))
+	_, err = mr.provider.httpClient.R().SetResult(&machine).Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", mr.provider.httpEndpoint, data.App.Value, data.Id.Value))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
 		return
@@ -582,7 +577,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 
 	var updatedMachine MachineResponse
 
-	createResponse, err := mr.http.R().SetBody(&updateReq).SetResult(&updatedMachine).Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s", state.App.Value, state.Id.Value))
+	createResponse, err := mr.provider.httpClient.R().SetBody(&updateReq).SetResult(&updatedMachine).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", mr.provider.httpEndpoint, state.App.Value, state.Id.Value))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
 		return
@@ -623,7 +618,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		state.Mounts = tfmounts
 	}
 
-	_, err = mr.http.R().Get(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s/wait?instance_id=%s", state.App.Value, state.Id.Value, updatedMachine.InstanceID))
+	_, err = mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/wait?instance_id=%s", mr.provider.httpEndpoint, state.App.Value, state.Id.Value, updatedMachine.InstanceID))
 	if err != nil {
 		tflog.Info(ctx, "Waiting errored")
 	}
@@ -647,18 +642,18 @@ func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourc
 
 	maxRetries := 50
 	deleted := false
-
 	for i := 0; i < maxRetries; i++ {
 		var machine MachineResponse
-		readResponse, err := mr.http.R().SetResult(&machine).Get(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s", data.App.Value, data.Id.Value))
+		readResponse, err := mr.provider.httpClient.R().SetResult(&machine).Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", mr.provider.httpEndpoint, data.App.Value, data.Id.Value))
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to get machine", err.Error())
 			return
 		}
+
 		if readResponse.StatusCode == 200 {
 			if machine.State == "started" || machine.State == "starting" || machine.State == "replacing" {
 				tflog.Info(ctx, "Stopping machine")
-				_, _ = mr.http.R().Post(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s/stop", data.App.Value, data.Id.Value))
+				_, _ = mr.provider.httpClient.R().Post(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/stop", mr.provider.httpEndpoint, data.App.Value, data.Id.Value))
 			}
 			if machine.State == "stopping" || machine.State == "destroying" {
 				tflog.Info(ctx, "In the process of stopping or destroying")
@@ -666,7 +661,7 @@ func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourc
 			}
 			if machine.State == "stopped" || machine.State == "replaced" {
 				tflog.Info(ctx, "Destroying")
-				_, err = mr.http.R().Delete(fmt.Sprintf("http://127.0.0.1:4280/v1/apps/%s/machines/%s", data.App.Value, data.Id.Value))
+				_, err = mr.provider.httpClient.R().Delete(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", mr.provider.httpEndpoint, data.App.Value, data.Id.Value))
 				if err != nil {
 					resp.Diagnostics.AddError("Failed to delete", err.Error())
 					return

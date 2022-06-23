@@ -18,15 +18,17 @@ import (
 var _ tfsdk.Provider = &provider{}
 
 type provider struct {
-	configured bool
-	version    string
-	token      string
-	client     *graphql.Client
-	httpClient *hreq.Client
+	configured   bool
+	version      string
+	token        string
+	httpEndpoint string
+	client       *graphql.Client
+	httpClient   *hreq.Client
 }
 
 type providerData struct {
-	FlyToken types.String `tfsdk:"fly_api_token"`
+	FlyToken        types.String `tfsdk:"fly_api_token"`
+	FlyHttpEndpoint types.String `tfsdk:"fly_http_endpoint"`
 }
 
 func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
@@ -37,6 +39,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	var token string
 	if data.FlyToken.Unknown {
 		resp.Diagnostics.AddWarning(
@@ -45,7 +48,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		)
 		return
 	}
-	if data.FlyToken.Null {
+	if data.FlyToken.Null || data.FlyToken.Unknown {
 		token = os.Getenv("FLY_API_TOKEN")
 	} else {
 		token = data.FlyToken.Value
@@ -58,12 +61,30 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
+	p.token = token
+
+	endpoint, exists := os.LookupEnv("FLY_HTTP_ENDPOINT")
+	httpEndpoint := "127.0.0.1:4280"
+	if !data.FlyHttpEndpoint.Null && !data.FlyHttpEndpoint.Unknown {
+		httpEndpoint = data.FlyHttpEndpoint.Value
+	} else if exists {
+		httpEndpoint = endpoint
+	}
+
+	p.httpEndpoint = httpEndpoint
+
 	enableTracing := false
 	_, ok := os.LookupEnv("DEBUG")
 	if ok {
 		enableTracing = true
 		resp.Diagnostics.AddWarning("Debug mode enabled", "Debug mode enabled, this will add the Fly-Force-Trace header to all graphql requests")
 	}
+
+	hclient := hreq.C()
+	p.httpClient = hclient
+
+	p.httpClient.SetCommonHeader("Authorization", "Bearer "+p.token)
+	p.httpClient.SetTimeout(2 * time.Minute)
 
 	if enableTracing {
 		p.httpClient.SetCommonHeader("Fly-Force-Trace", "true")
@@ -73,27 +94,18 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	h := http.Client{Timeout: 60 * time.Second, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: token, Ctx: ctx, EnableDebugTrace: enableTracing}}
 	client := graphql.NewClient("https://api.fly.io/graphql", &h)
 	p.client = &client
-	p.token = token
 
 	p.configured = true
 }
 
 func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
-	hclient := hreq.C()
-	p.httpClient = hclient
-
-	p.httpClient.SetCommonHeader("Authorization", "Bearer "+p.token)
-	p.httpClient.SetTimeout(2 * time.Minute)
 
 	return map[string]tfsdk.ResourceType{
-		"fly_app":    flyAppResourceType{},
-		"fly_volume": flyVolumeResourceType{},
-		"fly_ip":     flyIpResourceType{},
-		"fly_cert":   flyCertResourceType{},
-		"fly_machine": flyMachineResourceType{
-			Token: p.token,
-			Http:  p.httpClient,
-		},
+		"fly_app":     flyAppResourceType{},
+		"fly_volume":  flyVolumeResourceType{},
+		"fly_ip":      flyIpResourceType{},
+		"fly_cert":    flyCertResourceType{},
+		"fly_machine": flyMachineResourceType{},
 	}, nil
 }
 
@@ -110,6 +122,11 @@ func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostic
 		Attributes: map[string]tfsdk.Attribute{
 			"fly_api_token": {
 				MarkdownDescription: "fly.io api token. If not set checks env for FLY_API_TOKEN",
+				Optional:            true,
+				Type:                types.StringType,
+			},
+			"fly_http_endpoint": {
+				MarkdownDescription: "Where the provider should look to find the fly http endpoint",
 				Optional:            true,
 				Type:                types.StringType,
 			},
