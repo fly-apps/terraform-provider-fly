@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - 'README.md'
   push:
+    branches-ignore: ["dependabot/**"]
     paths-ignore:
       - 'README.md'
   workflow_dispatch:
