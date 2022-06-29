@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.9.1
 	github.com/hashicorp/terraform-plugin-log v0.4.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.17.0
-	github.com/imroc/req/v3 v3.13.1
+	github.com/imroc/req/v3 v3.13.2
 	github.com/miekg/dns v1.1.50
 	github.com/vektah/gqlparser/v2 v2.4.5
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
