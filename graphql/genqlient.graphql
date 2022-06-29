@@ -134,7 +134,7 @@ query IpAddressQuery($app: String, $addr: String!) {
     }
 }
 
-mutation AllocateIpAddress($app: ID!, $region: String, $addrType: IPAddressType) {
+mutation AllocateIpAddress($app: ID!, $region: String, $addrType: IPAddressType!) {
     allocateIpAddress(input: {
         appId: $app,
         region: $region,
