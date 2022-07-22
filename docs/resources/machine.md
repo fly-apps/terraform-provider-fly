@@ -99,11 +99,14 @@ Required:
 <a id="nestedatt--mounts"></a>
 ### Nested Schema for `mounts`
 
+Required:
+
+- `path` (String) Path for volume to be mounted on vm
+- `volume` (String) Name or ID of volume
+
 Optional:
 
 - `encrypted` (Boolean)
-- `path` (String) Path for volume to be mounted on vm
 - `size_gb` (Number)
-- `volume` (String) Name or ID of volume
 
 
