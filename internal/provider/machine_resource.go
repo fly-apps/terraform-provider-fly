@@ -525,10 +525,10 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	}
 
 	if !state.Name.Unknown && plan.Name.Value != state.Name.Value {
-		resp.Diagnostics.AddError("Can't mutate name of existing machine", "Can't swith name "+state.Name.Value+" to "+plan.Name.Value)
+		resp.Diagnostics.AddError("Can't mutate name of existing machine", "Can't switch name "+state.Name.Value+" to "+plan.Name.Value)
 	}
 	if !state.Region.Unknown && plan.Region.Value != state.Region.Value {
-		resp.Diagnostics.AddError("Can't mutate region of existing machine", "Can't swith region "+state.Name.Value+" to "+plan.Name.Value)
+		resp.Diagnostics.AddError("Can't mutate region of existing machine", "Can't switch region "+state.Name.Value+" to "+plan.Name.Value)
 	}
 
 	services := TfServicesToServices(plan.Services)
