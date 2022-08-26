@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"errors"
+	"net/http"
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
 	hreq "github.com/imroc/req/v3"
@@ -133,8 +134,17 @@ func (a *MachineAPI) ReleaseMachine(lease MachineLease, app string, id string) e
 }
 
 // CreateMachine takes a MachineCreateOrUpdateRequest and creates the requested machine in the given app and then writes the response into the `res` param
-func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string, res *MachineResponse) (*hreq.Response, error) {
-	return a.httpClient.R().SetBody(req).SetResult(res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", a.endpoint, app))
+func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string, res *MachineResponse) error {
+	createResponse, err := a.httpClient.R().SetBody(req).SetResult(res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", a.endpoint, app))
+
+	if err != nil {
+		return err
+	}
+
+	if createResponse.StatusCode != http.StatusCreated && createResponse.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Create request failed: %s, %+v", createResponse.Status, res))
+	}
+	return nil
 }
 
 func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string, id string, res *MachineResponse) (*hreq.Response, error) {
