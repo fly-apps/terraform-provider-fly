@@ -80,6 +80,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		resp.Diagnostics.AddWarning("Debug mode enabled", "Debug mode enabled, this will add the Fly-Force-Trace header to all graphql requests")
 	}
 
+	//hclient := hreq.C().DevMode()
 	hclient := hreq.C()
 	p.httpClient = hclient
 
