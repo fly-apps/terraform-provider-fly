@@ -173,7 +173,7 @@ func (r flyAppResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 	if !plan.Org.Unknown && plan.Org.Value != state.Org.Value {
 		resp.Diagnostics.AddError("Can't mutate org of existing app", "Can't swith org"+state.Org.Value+" to "+plan.Org.Value)
 	}
-	if !plan.Name.Unknown && plan.Name.Value != state.Name.Value {
+	if !plan.Name.Null && plan.Name.Value != state.Name.Value {
 		resp.Diagnostics.AddError("Can't mutate Name of existing app", "Can't switch name "+state.Name.Value+" to "+plan.Name.Value)
 	}
 

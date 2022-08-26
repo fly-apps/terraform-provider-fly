@@ -10,7 +10,6 @@ terraform-provider-fly
 bin/
 dist/
 modules-dev/
-/pkg/
 website/.vagrant
 website/.bundle
 website/build
