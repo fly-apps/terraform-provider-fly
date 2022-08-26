@@ -2,8 +2,8 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"errors"
 	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -25,53 +25,15 @@ type flyMachineResource struct {
 	endpoint string
 }
 
-type GuestConfig struct {
-	Cpus     int    `json:"cpus,omitempty"`
-	MemoryMb int    `json:"memory_mb,omitempty"`
-	CpuType  string `json:"cpu_type,omitempty"`
-}
-
-type Port struct {
-	Port     int64    `json:"port" tfsdk:"port"`
-	Handlers []string `json:"handlers" tfsdk:"handlers"`
-}
-
 type TfPort struct {
 	Port     types.Int64    `tfsdk:"port"`
 	Handlers []types.String `tfsdk:"handlers"`
-}
-
-type Service struct {
-	Ports        []Port `json:"ports" tfsdk:"ports"`
-	Protocol     string `json:"protocol" tfsdk:"protocol"`
-	InternalPort int64  `json:"internal_port" tfsdk:"internal_port"`
 }
 
 type TfService struct {
 	Ports        []TfPort     `tfsdk:"ports"`
 	Protocol     types.String `tfsdk:"protocol"`
 	InternalPort types.Int64  `tfsdk:"internal_port"`
-}
-
-type MachineMount struct {
-	Encrypted bool   `json:"encrypted,omitempty"`
-	Path      string `json:"path"`
-	SizeGb    int    `json:"size_gb,omitempty"`
-	Volume    string `json:"volume"`
-}
-
-type MachineConfig struct {
-	Image    string            `json:"image"`
-	Env      map[string]string `json:"env"`
-	Mounts   []MachineMount    `json:"mounts,omitempty"`
-	Services []Service         `json:"services"`
-}
-
-type CreateOrUpdateMachineRequest struct {
-	Name   string        `json:"name"`
-	Region string        `json:"region"`
-	Config MachineConfig `json:"config"`
-	Guest  GuestConfig   `json:"guest,omitempty"`
 }
 
 type flyMachineResourceData struct {
@@ -253,16 +215,11 @@ func (mr flyMachineResourceType) NewResource(_ context.Context, in tfsdk.Provide
 }
 
 func (mr flyMachineResource) ValidateOpenTunnel() (bool, error) {
-	//HACK: This is not a good way to do this, but I'm tired. Future me, please fix this.
-	response, err := mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s/bogus", mr.provider.httpEndpoint))
+	_, err := mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s", mr.provider.httpEndpoint))
 	if err != nil {
-		return false, err
+		return false, errors.New("Can't connect to the api, is the tunnel open? :)")
 	}
-	if response.Status == "404 Not Found" {
-		return true, nil
-	} else {
-		return false, errors.New("unexpected in ValidateOpenTunnel. File an issue")
-	}
+	return true, nil
 }
 
 func TfServicesToServices(input []TfService) []apiv1.Service {
@@ -371,14 +328,9 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	machineAPI := apiv1.NewMachineAPI(mr.provider.httpClient, mr.provider.httpEndpoint)
 
 	var newMachine apiv1.MachineResponse
-	createResponse, err := machineAPI.CreateMachine(createReq, data.App.Value, &newMachine)
+	err = machineAPI.CreateMachine(createReq, data.App.Value, &newMachine)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
-		return
-	}
-
-	if createResponse.StatusCode != http.StatusCreated && createResponse.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError("Create request failed", fmt.Sprintf("%s, %+v", createResponse.Status, newMachine))
 		return
 	}
 

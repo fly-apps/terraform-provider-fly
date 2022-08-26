@@ -9,6 +9,7 @@ import (
 )
 
 func TestAccFlyMachine(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -91,6 +92,7 @@ resource "fly_machine" "testMachine" {
 }
 
 func TestAccFlyMachineNoServices(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -121,6 +123,7 @@ resource "fly_machine" "testMachine" {
 }
 
 func TestAccFlyMachineEmptyServices(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -152,6 +155,7 @@ resource "fly_machine" "testMachine" {
 }
 
 func TestAccFlyMachineInitOptions(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -188,6 +192,7 @@ resource "fly_machine" "testMachine" {
 }
 
 func TestAccFlyMachineModifyImage(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -236,6 +241,7 @@ resource "fly_machine" "testMachine" {
 }
 
 func TestAccFlyMachineEmptyName(t *testing.T) {
+	t.Parallel()
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testAccPreCheck(t) },
