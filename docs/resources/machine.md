@@ -59,23 +59,39 @@ resource "fly_machine" "exampleMachine" {
 
 ### Required
 
-- `app` (String) fly app
 - `image` (String) docker image
 - `region` (String) machine region
-- `services` (Attributes List) services (see [below for nested schema](#nestedatt--services))
 
 ### Optional
 
+- `app` (String) fly app
+- `cmd` (List of String) exec command
 - `cpus` (Number) cpu count
 - `cputype` (String) cpu type
+- `entrypoint` (List of String) image entrypoint
 - `env` (Map of String) Optional environment variables, keys and values must be strings
 - `memorymb` (Number) memory mb
 - `mounts` (Attributes List) Volume mounts (see [below for nested schema](#nestedatt--mounts))
 - `name` (String) machine name
+- `services` (Attributes List) services (see [below for nested schema](#nestedatt--services))
 
 ### Read-Only
 
 - `id` (String) machine id
+
+<a id="nestedatt--mounts"></a>
+### Nested Schema for `mounts`
+
+Required:
+
+- `path` (String) Path for volume to be mounted on vm
+- `volume` (String) Name or ID of volume
+
+Optional:
+
+- `encrypted` (Boolean)
+- `size_gb` (Number)
+
 
 <a id="nestedatt--services"></a>
 ### Nested Schema for `services`
@@ -93,20 +109,5 @@ Required:
 
 - `handlers` (List of String) How the edge should process requests
 - `port` (Number) External port
-
-
-
-<a id="nestedatt--mounts"></a>
-### Nested Schema for `mounts`
-
-Required:
-
-- `path` (String) Path for volume to be mounted on vm
-- `volume` (String) Name or ID of volume
-
-Optional:
-
-- `encrypted` (Boolean)
-- `size_gb` (Number)
 
 
