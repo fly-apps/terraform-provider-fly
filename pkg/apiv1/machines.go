@@ -2,10 +2,10 @@ package apiv1
 
 import (
 	"errors"
-	"net/http"
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
 	hreq "github.com/imroc/req/v3"
+	"net/http"
 	"time"
 )
 
@@ -133,6 +133,11 @@ func (a *MachineAPI) ReleaseMachine(lease MachineLease, app string, id string) e
 	return nil
 }
 
+func (a *MachineAPI) WaitForMachine(app string, id string, instanceID string) error {
+	_, err := a.httpClient.R().Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/wait?instance_id=%s", a.endpoint, app, id, instanceID))
+	return err
+}
+
 // CreateMachine takes a MachineCreateOrUpdateRequest and creates the requested machine in the given app and then writes the response into the `res` param
 func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string, res *MachineResponse) error {
 	createResponse, err := a.httpClient.R().SetBody(req).SetResult(res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", a.endpoint, app))
@@ -147,20 +152,23 @@ func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string,
 	return nil
 }
 
-func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string, id string, res *MachineResponse) (*hreq.Response, error) {
+func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string, id string, res *MachineResponse) error {
 	lease, err := a.LockMachine(app, id, 30)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	reqRes, err := a.httpClient.R().SetBody(req).SetResult(res).SetHeader(NonceHeader, lease.Data.Nonce).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", a.endpoint, app, id))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = a.ReleaseMachine(*lease, app, id)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return reqRes, nil
+	if reqRes.StatusCode != http.StatusCreated && reqRes.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Update request failed: %s, %+v", reqRes.Status, res))
+	}
+	return nil
 }
 
 func (a *MachineAPI) ReadMachine(app string, id string, res *MachineResponse) (*hreq.Response, error) {

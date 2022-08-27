@@ -14,7 +14,6 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
 var _ tfsdk.ResourceType = flyAppResourceType{}
 var _ tfsdk.Resource = flyAppResource{}
 var _ tfsdk.ResourceWithImportState = flyAppResource{}
@@ -171,7 +170,7 @@ func (r flyAppResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 	tflog.Info(ctx, fmt.Sprintf("existing: %+v, new: %+v", state, plan))
 
 	if !plan.Org.Unknown && plan.Org.Value != state.Org.Value {
-		resp.Diagnostics.AddError("Can't mutate org of existing app", "Can't swith org"+state.Org.Value+" to "+plan.Org.Value)
+		resp.Diagnostics.AddError("Can't mutate org of existing app", "Can't switch org"+state.Org.Value+" to "+plan.Org.Value)
 	}
 	if !plan.Name.Null && plan.Name.Value != state.Name.Value {
 		resp.Diagnostics.AddError("Can't mutate Name of existing app", "Can't switch name "+state.Name.Value+" to "+plan.Name.Value)
