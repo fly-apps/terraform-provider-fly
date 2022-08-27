@@ -2,8 +2,8 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"errors"
+	"fmt"
 	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"net/http"
 )
 
 var _ tfsdk.ResourceType = flyMachineResourceType{}
@@ -359,15 +358,6 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		Services:   tfservices,
 	}
 
-	//if newMachine.Config.Init.Entrypoint != nil {
-	//	tflog.Info(ctx, "WE SHOULD NOT BE HERE")
-	//	data.Cmd = types.String{Value: *newMachine.Config.Init.Entrypoint}
-	//}
-	//if newMachine.Config.Init.Cmd != nil {
-	//	tflog.Info(ctx, "WE SHOULD NOT BE HERE")
-	//	data.Cmd = types.String{Value: *newMachine.Config.Init.Cmd}
-	//}
-
 	if len(newMachine.Config.Mounts) > 0 {
 		var tfmounts []TfMachineMount
 		for _, m := range newMachine.Config.Mounts {
@@ -381,7 +371,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 		data.Mounts = tfmounts
 	}
 
-	_, err = mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/wait?instance_id=%s", mr.provider.httpEndpoint, data.App.Value, data.Id.Value, newMachine.InstanceID))
+	err = machineAPI.WaitForMachine(data.App.Value, data.Id.Value, newMachine.InstanceID)
 	if err != nil {
 		//FIXME(?): For now we just assume that the orchestrator is in fact going to faithfully execute our request
 		tflog.Info(ctx, "Waiting errored")
@@ -484,10 +474,10 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	}
 
 	if !plan.Name.Unknown && plan.Name.Value != state.Name.Value {
-		resp.Diagnostics.AddError("Can't mutate name of existing machine", "Can't swith name "+state.Name.Value+" to "+plan.Name.Value)
+		resp.Diagnostics.AddError("Can't mutate name of existing machine", "Can't switch name "+state.Name.Value+" to "+plan.Name.Value)
 	}
 	if !state.Region.Unknown && plan.Region.Value != state.Region.Value {
-		resp.Diagnostics.AddError("Can't mutate region of existing machine", "Can't swith region "+state.Name.Value+" to "+plan.Name.Value)
+		resp.Diagnostics.AddError("Can't mutate region of existing machine", "Can't switch region "+state.Name.Value+" to "+plan.Name.Value)
 	}
 
 	services := TfServicesToServices(plan.Services)
@@ -542,14 +532,9 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 
 	var updatedMachine apiv1.MachineResponse
 
-	createResponse, err := machineApi.UpdateMachine(updateReq, state.App.Value, state.Id.Value, &updatedMachine)
+	err = machineApi.UpdateMachine(updateReq, state.App.Value, state.Id.Value, &updatedMachine)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create machine", err.Error())
-		return
-	}
-
-	if createResponse.StatusCode != http.StatusCreated && createResponse.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError("Update request failed", fmt.Sprintf("%s, %+v", createResponse.Status, updatedMachine))
+		resp.Diagnostics.AddError("Failed to update machine", err.Error())
 		return
 	}
 
@@ -589,7 +574,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		state.Mounts = tfmounts
 	}
 
-	_, err = mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/wait?instance_id=%s", mr.provider.httpEndpoint, state.App.Value, state.Id.Value, updatedMachine.InstanceID))
+	err = machineApi.WaitForMachine(state.App.Value, state.Id.Value, updatedMachine.InstanceID)
 	if err != nil {
 		tflog.Info(ctx, "Waiting errored")
 	}
