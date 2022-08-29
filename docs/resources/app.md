@@ -28,11 +28,11 @@ resource "fly_app" "exampleApp" {
 ### Optional
 
 - `org` (String) Optional org slug to operate upon
-- `secrets` (Map of String, Sensitive) App secrets
 
 ### Read-Only
 
 - `appurl` (String) readonly appUrl
+- `id` (String) readonly app id
 - `orgid` (String) readonly orgid
 
 
