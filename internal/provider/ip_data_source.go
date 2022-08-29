@@ -6,16 +6,19 @@ import (
 	"fmt"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.DataSourceType = ipDataSourceType{}
-var _ tfsdk.DataSource = ipDataSource{}
+var _ tfsdkprovider.DataSourceType = ipDataSourceType{}
+var _ datasource.DataSource = ipDataSource{}
 
 type ipDataSourceType struct{}
 
@@ -64,7 +67,7 @@ func (i ipDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 	}, nil
 }
 
-func (i ipDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
+func (i ipDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return ipDataSource{
@@ -72,7 +75,7 @@ func (i ipDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) 
 	}, diags
 }
 
-func (i ipDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
+func (i ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data ipDataSourceOutput
 
 	diags := req.Config.Get(ctx, &data)

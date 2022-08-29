@@ -6,16 +6,19 @@ import (
 	"fmt"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
-var _ tfsdk.ResourceType = flyCertResourceType{}
-var _ tfsdk.Resource = flyCertResource{}
-var _ tfsdk.ResourceWithImportState = flyCertResource{}
+var _ tfsdkprovider.ResourceType = flyCertResourceType{}
+var _ resource.Resource = flyCertResource{}
+var _ resource.ResourceWithImportState = flyCertResource{}
 
 type flyCertResourceType struct{}
 
@@ -76,7 +79,7 @@ func (t flyCertResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 	}, nil
 }
 
-func (t flyCertResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (t flyCertResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return flyCertResource{
@@ -84,7 +87,7 @@ func (t flyCertResourceType) NewResource(ctx context.Context, in tfsdk.Provider)
 	}, diags
 }
 
-func (cr flyCertResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+func (cr flyCertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyCertResourceData
 
 	diags := req.Plan.Get(ctx, &data)
@@ -114,7 +117,7 @@ func (cr flyCertResource) Create(ctx context.Context, req tfsdk.CreateResourceRe
 	}
 }
 
-func (cr flyCertResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+func (cr flyCertResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data flyCertResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -153,12 +156,12 @@ func (cr flyCertResource) Read(ctx context.Context, req tfsdk.ReadResourceReques
 	}
 }
 
-func (cr flyCertResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+func (cr flyCertResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("The fly api does not allow updating certs once created", "Try deleting and then recreating the cert with new options")
 	return
 }
 
-func (cr flyCertResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+func (cr flyCertResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data flyCertResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -176,6 +179,6 @@ func (cr flyCertResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRe
 	}
 }
 
-func (cr flyCertResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+func (cr flyCertResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

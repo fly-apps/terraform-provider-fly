@@ -44,6 +44,7 @@ query GetFullApp($name: String) {
 mutation CreateAppMutation($name: String, $organizationId: ID!) {
     createApp(input: {name: $name, organizationId: $organizationId}) {
         app {
+            id
             name
             status
             organization {
@@ -240,6 +241,14 @@ mutation RemoveWireguardPeer(
     removeWireGuardPeer(input: $input) {
         organization {
             name
+        }
+    }
+}
+
+mutation SetSecrets($input: SetSecretsInput!) {
+    setSecrets(input: $input) {
+        release {
+            id
         }
     }
 }

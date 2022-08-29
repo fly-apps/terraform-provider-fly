@@ -3,14 +3,17 @@ package provider
 import (
 	"context"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.DataSourceType = appDataSourceType{}
-var _ tfsdk.DataSource = appDataSource{}
+var _ tfsdkprovider.DataSourceType = appDataSourceType{}
+var _ datasource.DataSource = appDataSource{}
 
 type appDataSourceType struct{}
 
@@ -73,7 +76,7 @@ func (a appDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Di
 	}, nil
 }
 
-func (a appDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
+func (a appDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return appDataSource{
@@ -81,7 +84,7 @@ func (a appDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider)
 	}, diags
 }
 
-func (d appDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
+func (d appDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data appDataSourceOutput
 
 	diags := req.Config.Get(ctx, &data)

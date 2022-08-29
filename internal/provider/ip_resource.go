@@ -7,16 +7,18 @@ import (
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-var _ tfsdk.ResourceType = flyIpResourceType{}
-var _ tfsdk.Resource = flyIpResource{}
-var _ tfsdk.ResourceWithImportState = flyIpResource{}
+var _ tfsdkprovider.ResourceType = flyIpResourceType{}
+var _ resource.Resource = flyIpResource{}
+var _ resource.ResourceWithImportState = flyIpResource{}
 
 type flyIpResourceType struct{}
 
@@ -68,7 +70,7 @@ func (t flyIpResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagno
 	}, nil
 }
 
-func (t flyIpResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (t flyIpResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return flyIpResource{
@@ -76,7 +78,7 @@ func (t flyIpResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (
 	}, diags
 }
 
-func (ir flyIpResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+func (ir flyIpResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyIpResourceData
 
 	diags := req.Plan.Get(ctx, &data)
@@ -107,7 +109,7 @@ func (ir flyIpResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	}
 }
 
-func (ir flyIpResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+func (ir flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data flyIpResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -146,12 +148,12 @@ func (ir flyIpResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	}
 }
 
-func (ir flyIpResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+func (ir flyIpResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("The fly api does not allow updating ips once created", "Try deleting and then recreating the ip with new options")
 	return
 }
 
-func (ir flyIpResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+func (ir flyIpResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data flyIpResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -171,6 +173,6 @@ func (ir flyIpResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 	}
 }
 
-func (ir flyIpResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+func (ir flyIpResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

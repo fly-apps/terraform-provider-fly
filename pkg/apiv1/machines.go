@@ -46,19 +46,19 @@ type MachineConfig struct {
 	Init     InitConfig        `json:"init,omitempty"`
 	Mounts   []MachineMount    `json:"mounts,omitempty"`
 	Services []Service         `json:"services"`
+	Guest  GuestConfig   `json:"guest,omitempty"`
 }
 
 type GuestConfig struct {
 	Cpus     int    `json:"cpus,omitempty"`
 	MemoryMb int    `json:"memory_mb,omitempty"`
-	CpuType  string `json:"cpu_type,omitempty"`
+	CpuType  string `json:"cpu_kind,omitempty"`
 }
 
 type MachineCreateOrUpdateRequest struct {
 	Name   string        `json:"name"`
 	Region string        `json:"region"`
 	Config MachineConfig `json:"config"`
-	Guest  GuestConfig   `json:"guest,omitempty"`
 }
 
 type MachineResponse struct {
@@ -140,6 +140,9 @@ func (a *MachineAPI) WaitForMachine(app string, id string, instanceID string) er
 
 // CreateMachine takes a MachineCreateOrUpdateRequest and creates the requested machine in the given app and then writes the response into the `res` param
 func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string, res *MachineResponse) error {
+	if req.Config.Guest.CpuType == "" {
+               req.Config.Guest.CpuType = "shared"
+	}
 	createResponse, err := a.httpClient.R().SetBody(req).SetResult(res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", a.endpoint, app))
 
 	if err != nil {
@@ -153,6 +156,9 @@ func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string,
 }
 
 func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string, id string, res *MachineResponse) error {
+	if req.Config.Guest.CpuType == "" {
+               req.Config.Guest.CpuType = "shared"
+	}
 	lease, err := a.LockMachine(app, id, 30)
 	if err != nil {
 		return err
