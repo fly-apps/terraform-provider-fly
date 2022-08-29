@@ -11,11 +11,12 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ tfsdk.Provider = &provider{}
+var _ tfsdkprovider.Provider = &provider{}
 
 type provider struct {
 	configured   bool
@@ -31,7 +32,7 @@ type providerData struct {
 	FlyHttpEndpoint types.String `tfsdk:"fly_http_endpoint"`
 }
 
-func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
+func (p *provider) Configure(ctx context.Context, req tfsdkprovider.ConfigureRequest, resp *tfsdkprovider.ConfigureResponse) {
 	var data providerData
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -80,7 +81,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		resp.Diagnostics.AddWarning("Debug mode enabled", "Debug mode enabled, this will add the Fly-Force-Trace header to all graphql requests")
 	}
 
-	//hclient := hreq.C().DevMode()
+//	hclient := hreq.C().DevMode()
 	hclient := hreq.C()
 	p.httpClient = hclient
 
@@ -99,9 +100,9 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	p.configured = true
 }
 
-func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
+func (p *provider) GetResources(ctx context.Context) (map[string]tfsdkprovider.ResourceType, diag.Diagnostics) {
 
-	return map[string]tfsdk.ResourceType{
+	return map[string]tfsdkprovider.ResourceType{
 		"fly_app":     flyAppResourceType{},
 		"fly_volume":  flyVolumeResourceType{},
 		"fly_ip":      flyIpResourceType{},
@@ -110,8 +111,8 @@ func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceT
 	}, nil
 }
 
-func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdk.DataSourceType{
+func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdkprovider.DataSourceType, diag.Diagnostics) {
+	return map[string]tfsdkprovider.DataSourceType{
 		"fly_app":  appDataSourceType{},
 		"fly_cert": certDataSourceType{},
 		"fly_ip":   ipDataSourceType{},
@@ -135,8 +136,8 @@ func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostic
 	}, nil
 }
 
-func New(version string) func() tfsdk.Provider {
-	return func() tfsdk.Provider {
+func New(version string) func() tfsdkprovider.Provider {
+	return func() tfsdkprovider.Provider {
 		return &provider{
 			version: version,
 		}
@@ -148,7 +149,7 @@ func New(version string) func() tfsdk.Provider {
 // this helper can be skipped and the provider type can be directly type
 // asserted (e.g. provider: in.(*provider)), however using this can prevent
 // potential panics.
-func convertProviderType(in tfsdk.Provider) (provider, diag.Diagnostics) {
+func convertProviderType(in tfsdkprovider.Provider) (provider, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	p, ok := in.(*provider)

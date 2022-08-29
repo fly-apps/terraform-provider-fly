@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.DataSourceType = certDataSourceType{}
-var _ tfsdk.DataSource = certDataSource{}
+var _ tfsdkprovider.DataSourceType = certDataSourceType{}
+var _ datasource.DataSource = certDataSource{}
 
 type certDataSourceType struct{}
 
@@ -70,7 +73,7 @@ func (t certDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.D
 	}, nil
 }
 
-func (t certDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
+func (t certDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return certDataSource{
@@ -78,7 +81,7 @@ func (t certDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider
 	}, diags
 }
 
-func (d certDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
+func (d certDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data certDataSourceOutput
 
 	diags := req.Config.Get(ctx, &data)

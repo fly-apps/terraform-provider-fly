@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-var _ tfsdk.ResourceType = flyVolumeResourceType{}
-var _ tfsdk.Resource = flyVolumeResource{}
-var _ tfsdk.ResourceWithImportState = flyVolumeResource{}
+var _ tfsdkprovider.ResourceType = flyVolumeResourceType{}
+var _ resource.Resource = flyVolumeResource{}
+var _ resource.ResourceWithImportState = flyVolumeResource{}
 
 type flyVolumeResourceType struct{}
 
@@ -70,7 +72,7 @@ func (t flyVolumeResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Di
 	}, nil
 }
 
-func (t flyVolumeResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (t flyVolumeResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return flyVolumeResource{
@@ -78,7 +80,7 @@ func (t flyVolumeResourceType) NewResource(ctx context.Context, in tfsdk.Provide
 	}, diags
 }
 
-func (vr flyVolumeResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+func (vr flyVolumeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyVolumeResourceData
 
 	diags := req.Plan.Get(ctx, &data)
@@ -107,7 +109,7 @@ func (vr flyVolumeResource) Create(ctx context.Context, req tfsdk.CreateResource
 	}
 }
 
-func (vr flyVolumeResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+func (vr flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data flyVolumeResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -137,12 +139,12 @@ func (vr flyVolumeResource) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	}
 }
 
-func (vr flyVolumeResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+func (vr flyVolumeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("The fly api does not allow updating volumes once created", "Try deleting and then recreating a volume with new options")
 	return
 }
 
-func (vr flyVolumeResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+func (vr flyVolumeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data flyVolumeResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -162,6 +164,6 @@ func (vr flyVolumeResource) Delete(ctx context.Context, req tfsdk.DeleteResource
 	}
 }
 
-func (vr flyVolumeResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+func (vr flyVolumeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

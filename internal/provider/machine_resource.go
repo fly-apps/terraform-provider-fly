@@ -4,18 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/fly-apps/terraform-provider-fly/internal/utils"
 	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+
+	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
-var _ tfsdk.ResourceType = flyMachineResourceType{}
-var _ tfsdk.Resource = flyMachineResource{}
-var _ tfsdk.ResourceWithImportState = flyMachineResource{}
+var _ tfsdkprovider.ResourceType = flyMachineResourceType{}
+var _ resource.Resource = flyMachineResource{}
+var _ resource.ResourceWithImportState = flyMachineResource{}
 
 type flyMachineResourceType struct{}
 
@@ -59,18 +62,6 @@ type TfMachineMount struct {
 	Volume    types.String `tfsdk:"volume"`
 }
 
-func KVToTfMap(kv map[string]string, elemType attr.Type) types.Map {
-	var TFMap types.Map
-	TFMap.ElemType = elemType
-	for key, value := range kv {
-		if TFMap.Elems == nil {
-			TFMap.Elems = map[string]attr.Value{}
-		}
-		TFMap.Elems[key] = types.String{Value: value}
-	}
-	return TFMap
-}
-
 func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Fly machine resource",
@@ -80,7 +71,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.RequiresReplace(),
+					resource.RequiresReplace(),
 				},
 				Type: types.StringType,
 			},
@@ -88,7 +79,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 				MarkdownDescription: "machine region",
 				Required:            true,
 				PlanModifiers: tfsdk.AttributePlanModifiers{
-					tfsdk.RequiresReplace(),
+					resource.RequiresReplace(),
 				},
 				Type: types.StringType,
 			},
@@ -205,7 +196,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 	}, nil
 }
 
-func (mr flyMachineResourceType) NewResource(_ context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (mr flyMachineResourceType) NewResource(_ context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return flyMachineResource{
@@ -267,7 +258,7 @@ func ServicesToTfServices(input []apiv1.Service) []TfService {
 	return tfservices
 }
 
-func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	_, err := mr.ValidateOpenTunnel()
 	if err != nil {
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
@@ -297,13 +288,13 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	}
 
 	if !data.Cpus.Unknown {
-		createReq.Guest.Cpus = int(data.Cpus.Value)
+		createReq.Config.Guest.Cpus = int(data.Cpus.Value)
 	}
 	if !data.CpuType.Unknown {
-		createReq.Guest.CpuType = data.CpuType.Value
+		createReq.Config.Guest.CpuType = data.CpuType.Value
 	}
 	if !data.MemoryMb.Unknown {
-		createReq.Guest.MemoryMb = int(data.MemoryMb.Value)
+		createReq.Config.Guest.MemoryMb = int(data.MemoryMb.Value)
 	}
 
 	if !data.Env.Unknown {
@@ -335,14 +326,14 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", newMachine))
 
-	env := KVToTfMap(newMachine.Config.Env, types.StringType)
+	env := utils.KVToTfMap(newMachine.Config.Env, types.StringType)
 
 	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
 	if data.Services == nil {
 		tfservices = nil
 	}
-
+	tflog.Info(ctx, fmt.Sprintf("how many cpus? %d but requested %d", newMachine.Config.Guest.Cpus, data.Cpus.Value));
 	data = flyMachineResourceData{
 		Name:       types.String{Value: newMachine.Name},
 		Region:     types.String{Value: newMachine.Region},
@@ -384,7 +375,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req tfsdk.CreateResourc
 	}
 }
 
-func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	_, err := mr.ValidateOpenTunnel()
 	if err != nil {
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
@@ -405,7 +396,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		return
 	}
 
-	env := KVToTfMap(machine.Config.Env, types.StringType)
+	env := utils.KVToTfMap(machine.Config.Env, types.StringType)
 
 	tfservices := ServicesToTfServices(machine.Config.Services)
 
@@ -448,7 +439,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req tfsdk.ReadResourceReq
 	}
 }
 
-func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+func (mr flyMachineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	_, err := mr.ValidateOpenTunnel()
 	if err != nil {
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
@@ -496,13 +487,13 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	}
 
 	if !plan.Cpus.Unknown {
-		updateReq.Guest.Cpus = int(plan.Cpus.Value)
+		updateReq.Config.Guest.Cpus = int(plan.Cpus.Value)
 	}
 	if !plan.CpuType.Unknown {
-		updateReq.Guest.CpuType = plan.CpuType.Value
+		updateReq.Config.Guest.CpuType = plan.CpuType.Value
 	}
 	if !plan.MemoryMb.Unknown {
-		updateReq.Guest.MemoryMb = int(plan.MemoryMb.Value)
+		updateReq.Config.Guest.MemoryMb = int(plan.MemoryMb.Value)
 	}
 	if plan.Env.Null {
 		env := map[string]string{}
@@ -538,7 +529,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 		return
 	}
 
-	env := KVToTfMap(updatedMachine.Config.Env, types.StringType)
+	env := utils.KVToTfMap(updatedMachine.Config.Env, types.StringType)
 
 	tfservices := ServicesToTfServices(updatedMachine.Config.Services)
 
@@ -585,7 +576,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req tfsdk.UpdateResourc
 	}
 }
 
-func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+func (mr flyMachineResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data flyMachineResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -611,6 +602,6 @@ func (mr flyMachineResource) Delete(ctx context.Context, req tfsdk.DeleteResourc
 	}
 }
 
-func (mr flyMachineResource) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+func (mr flyMachineResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

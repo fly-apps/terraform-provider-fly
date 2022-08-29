@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestAccFlyMachine(t *testing.T) {
+func TestAccFlyMachineBase(t *testing.T) {
 	t.Parallel()
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
