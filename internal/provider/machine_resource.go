@@ -175,7 +175,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 							},
 							"handlers": {
 								MarkdownDescription: "How the edge should process requests",
-								Required:            true,
+								Optional:            true,
 								Type:                types.ListType{ElemType: types.StringType},
 							},
 						}),
