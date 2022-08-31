@@ -175,7 +175,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 							},
 							"handlers": {
 								MarkdownDescription: "How the edge should process requests",
-								Required:            true,
+								Optional:            true,
 								Type:                types.ListType{ElemType: types.StringType},
 							},
 						}),
@@ -333,7 +333,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 	if data.Services == nil {
 		tfservices = nil
 	}
-	tflog.Info(ctx, fmt.Sprintf("how many cpus? %d but requested %d", newMachine.Config.Guest.Cpus, data.Cpus.Value));
+	tflog.Info(ctx, fmt.Sprintf("how many cpus? %d but requested %d", newMachine.Config.Guest.Cpus, data.Cpus.Value))
 	data = flyMachineResourceData{
 		Name:       types.String{Value: newMachine.Name},
 		Region:     types.String{Value: newMachine.Region},
