@@ -107,7 +107,10 @@ Required:
 
 Required:
 
-- `handlers` (List of String) How the edge should process requests
 - `port` (Number) External port
+
+Optional:
+
+- `handlers` (List of String) How the edge should process requests
 
 
