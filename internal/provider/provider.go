@@ -81,16 +81,15 @@ func (p *provider) Configure(ctx context.Context, req tfsdkprovider.ConfigureReq
 		resp.Diagnostics.AddWarning("Debug mode enabled", "Debug mode enabled, this will add the Fly-Force-Trace header to all graphql requests")
 	}
 
-//	hclient := hreq.C().DevMode()
-	hclient := hreq.C()
-	p.httpClient = hclient
-
-	p.httpClient.SetCommonHeader("Authorization", "Bearer "+p.token)
-	p.httpClient.SetTimeout(2 * time.Minute)
+	p.httpClient = hreq.C()
 
 	if enableTracing {
 		p.httpClient.SetCommonHeader("Fly-Force-Trace", "true")
+		p.httpClient = hreq.C().DevMode()
 	}
+
+	p.httpClient.SetCommonHeader("Authorization", "Bearer "+p.token)
+	p.httpClient.SetTimeout(2 * time.Minute)
 
 	// TODO: Make timeout configurable
 	h := http.Client{Timeout: 60 * time.Second, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: token, Ctx: ctx, EnableDebugTrace: enableTracing}}
