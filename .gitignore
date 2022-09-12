@@ -39,3 +39,6 @@ website/vendor
 .direnv
 .envrc
 terraform-provider-fly
+
+examples/local/
+tmp/
