@@ -330,10 +330,10 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 
 	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
-	if data.Services == nil {
+	if len(tfservices) == 0 {
 		tfservices = nil
 	}
-	tflog.Info(ctx, fmt.Sprintf("how many cpus? %d but requested %d", newMachine.Config.Guest.Cpus, data.Cpus.Value))
+
 	data = flyMachineResourceData{
 		Name:       types.String{Value: newMachine.Name},
 		Region:     types.String{Value: newMachine.Region},
@@ -400,7 +400,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	tfservices := ServicesToTfServices(machine.Config.Services)
 
-	if data.Services == nil {
+	if len(tfservices) == 0 {
 		tfservices = nil
 	}
 
