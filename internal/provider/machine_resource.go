@@ -207,7 +207,7 @@ func (mr flyMachineResourceType) NewResource(_ context.Context, in tfsdkprovider
 func (mr flyMachineResource) ValidateOpenTunnel() (bool, error) {
 	_, err := mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s", mr.provider.httpEndpoint))
 	if err != nil {
-		return false, errors.New("Can't connect to the api, is the tunnel open? :)")
+		return false, errors.New("can't connect to the api, is the tunnel open? :)")
 	}
 	return true, nil
 }
@@ -330,7 +330,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 
 	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
-	if len(tfservices) == 0 {
+	if data.Services == nil || len(tfservices) == 0 {
 		tfservices = nil
 	}
 
@@ -400,7 +400,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	tfservices := ServicesToTfServices(machine.Config.Services)
 
-	if len(tfservices) == 0 {
+	if data.Services == nil || len(tfservices) == 0 {
 		tfservices = nil
 	}
 
