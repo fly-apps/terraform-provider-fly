@@ -330,7 +330,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 
 	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
-	if data.Services == nil || len(tfservices) == 0 {
+	if data.Services == nil && len(tfservices) == 0 {
 		tfservices = nil
 	}
 
@@ -400,7 +400,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	tfservices := ServicesToTfServices(machine.Config.Services)
 
-	if data.Services == nil || len(tfservices) == 0 {
+	if data.Services == nil && len(tfservices) == 0 {
 		tfservices = nil
 	}
 
