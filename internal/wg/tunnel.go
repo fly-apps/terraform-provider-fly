@@ -156,7 +156,7 @@ type Tunnel struct {
 	resolv   *net.Resolver
 }
 
-func doConnect(ctx context.Context, state *WireGuardState) (*Tunnel, error) {
+func doConnect(ctx context.Context, state *WireGuardState, apiClient *rawgql.Client) (*Tunnel, error) {
 	cfg := state.TunnelConfig()
 
 	localNetworkIp, _ := netip.AddrFromSlice(cfg.LocalNetwork.IP)
@@ -206,12 +206,13 @@ func doConnect(ctx context.Context, state *WireGuardState) (*Tunnel, error) {
 	}
 
 	return &Tunnel{
-		dev:    wgDev,
-		tun:    tunDev,
-		net:    gNet,
-		dnsIP:  cfg.DNS,
-		Config: cfg,
-		State:  state,
+		dev:       wgDev,
+		tun:       tunDev,
+		net:       gNet,
+		dnsIP:     cfg.DNS,
+		Config:    cfg,
+		State:     state,
+		apiClient: apiClient,
 
 		resolv: &net.Resolver{
 			PreferGo: true,
@@ -245,16 +246,12 @@ func C25519pair() (string, string) {
 		base64.StdEncoding.EncodeToString(private[:])
 }
 
-type dialContextType = func(ctx context.Context, network, addr string) (net.Conn, error)
-
 type Client struct {
 	HttpClient http.Client
 }
 
 type Transport struct {
-	Dial                *net.Dialer
 	underlyingTransport http.RoundTripper
-	DialContext         dialContextType
 	token               string
 }
 
@@ -266,12 +263,12 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func (t *Tunnel) NewHttpClient() Client {
 	net.DefaultResolver = t.resolv
+	underlyingTransport := &http.Transport{
+		DialContext: t.net.DialContext,
+	}
 	transport := Transport{
 		token:               t.State.Token,
-		underlyingTransport: http.DefaultTransport,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return t.net.DialContext(ctx, network, addr)
-		},
+		underlyingTransport: underlyingTransport,
 	}
 
 	return Client{HttpClient: http.Client{Transport: &transport}}
@@ -285,9 +282,8 @@ func (t *Tunnel) Down() error {
 	if err != nil {
 		// Silently ignore this error for now. It's not the end of the world if the peer isn't removed
 	}
-	err = t.dev.Down()
-	if err != nil {
-		return err
+	if t.dev != nil {
+		t.dev.Close()
 	}
 	t.dev, t.tun, t.net = nil, nil, nil
 	return nil
@@ -359,7 +355,7 @@ func Establish(ctx context.Context, org string, region string, username string, 
 		Peer:         peer.AddWireGuardPeer,
 		Token:        token,
 	}
-	tunnel, err := doConnect(ctx, &state)
+	tunnel, err := doConnect(ctx, &state, client)
 
 	if err != nil {
 		return nil, err
