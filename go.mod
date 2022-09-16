@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Khan/genqlient v0.5.0
-	github.com/hashicorp/terraform-plugin-framework v0.11.1
+	github.com/hashicorp/terraform-plugin-framework v0.13.0
 	github.com/hashicorp/terraform-plugin-go v0.14.0
 	github.com/hashicorp/terraform-plugin-log v0.7.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.22.0
