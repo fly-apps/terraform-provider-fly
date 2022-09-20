@@ -27,7 +27,7 @@ func main() {
 	token := os.Getenv("FLY_API_TOKEN")
 	h := http.Client{Timeout: 60 * time.Second, Transport: &transport{underlyingTransport: http.DefaultTransport, token: token, ctx: ctx}}
 	client := graphql.NewClient("https://api.fly.io/graphql", &h)
-	tunnel, err := wg.Establish(ctx, "P7lZB0nw2ylg8smzmMLA9eVLAQuRL6", "ewr", "DAlperin", token, &client)
+	tunnel, err := wg.Establish(ctx, "P7lZB0nw2ylg8smzmMLA9eVLAQuRL6", "ewr", token, &client)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
