@@ -113,7 +113,6 @@ func (s *WireGuardState) TunnelConfig() *Config {
 		panic(fmt.Sprintf("martian local public key: %s", err))
 	}
 
-	//fmt.Println(fmt.Sprintf("%s/120", s.Peer.Peerip))
 	_, lnet, err := net.ParseCIDR(fmt.Sprintf("%s/120", s.Peer.Peerip))
 	if err != nil {
 		panic(fmt.Sprintf("martian local public: %s/120: %s", s.Peer.Peerip, err))
@@ -169,23 +168,23 @@ func doConnect(ctx context.Context, state *WireGuardState, apiClient *rawgql.Cli
 
 	tunDev, gNet, err := netstack.CreateNetTUN(localIPs, []netip.Addr{dnsIP}, mtu)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("tunnel error (CreateNetTUN): " + err.Error())
 	}
 
 	endpointHost, endpointPort, err := net.SplitHostPort(cfg.Endpoint)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("tunnel error (SplitHostPort): " + err.Error())
 	}
 
 	endpointIPs, err := net.LookupIP(endpointHost)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("tunnel error (LookupIP): " + err.Error())
 	}
 
 	endpointIP := endpointIPs[rand.Intn(len(endpointIPs))]
 	endpointAddr := net.JoinHostPort(endpointIP.String(), endpointPort)
 
-	wgDev := device.NewDevice(tunDev, conn.NewDefaultBind(), device.NewLogger(cfg.LogLevel, "(fly-ssh) "))
+	wgDev := device.NewDevice(tunDev, conn.NewDefaultBind(), device.NewLogger(cfg.LogLevel, "(fly-provider-tunnel) "))
 
 	wgConf := bytes.NewBuffer(nil)
 	fmt.Println(cfg.RemoteNetwork)
@@ -201,7 +200,7 @@ func doConnect(ctx context.Context, state *WireGuardState, apiClient *rawgql.Cli
 	}
 	err = wgDev.Up()
 	if err != nil {
-		return nil, err
+		return nil, errors.New("tunnel error (wgDev.Up()): " + err.Error())
 	}
 
 	return &Tunnel{
@@ -321,7 +320,7 @@ func (t *Tunnel) QueryDNS(ctx context.Context, msg *dns.Msg) (*dns.Msg, error) {
 
 	c, err := t.net.DialContext(ctx, "tcp", net.JoinHostPort(t.dnsIP.String(), "53"))
 	if err != nil {
-		return nil, err
+		return nil, errors.New("tunnel error (QueryDNS-DialContext): " + err.Error())
 	}
 	defer c.Close()
 
@@ -356,10 +355,10 @@ func Establish(ctx context.Context, org string, region string, token string, cli
 		Peer:         peer.AddWireGuardPeer,
 		Token:        token,
 	}
-	tunnel, err := doConnect(ctx, &state, client)
 
+	tunnel, err := doConnect(ctx, &state, client)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("tunnel error (doConnect): " + err.Error())
 	}
 	return tunnel, nil
 }
