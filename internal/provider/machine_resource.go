@@ -42,6 +42,7 @@ type flyMachineResourceData struct {
 	Name       types.String `tfsdk:"name"`
 	Region     types.String `tfsdk:"region"`
 	Id         types.String `tfsdk:"id"`
+	PrivateIP  types.String `tfsdk:"privateip"`
 	App        types.String `tfsdk:"app"`
 	Image      types.String `tfsdk:"image"`
 	Cpus       types.Int64  `tfsdk:"cpus"`
@@ -91,6 +92,11 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 			"app": {
 				MarkdownDescription: "fly app",
 				Optional:            true,
+				Type:                types.StringType,
+			},
+			"privateip": {
+				MarkdownDescription: "Private IP",
+				Computed:            true,
 				Type:                types.StringType,
 			},
 			"cmd": {
@@ -339,6 +345,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 		Region:     types.String{Value: newMachine.Region},
 		Id:         types.String{Value: newMachine.ID},
 		App:        types.String{Value: data.App.Value},
+		PrivateIP:  types.String{Value: newMachine.PrivateIP},
 		Image:      types.String{Value: newMachine.Config.Image},
 		Cpus:       types.Int64{Value: int64(newMachine.Config.Guest.Cpus)},
 		MemoryMb:   types.Int64{Value: int64(newMachine.Config.Guest.MemoryMb)},
@@ -409,6 +416,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 		Id:         types.String{Value: machine.ID},
 		Region:     types.String{Value: machine.Region},
 		App:        types.String{Value: data.App.Value},
+		PrivateIP:  types.String{Value: machine.PrivateIP},
 		Image:      types.String{Value: machine.Config.Image},
 		Cpus:       types.Int64{Value: int64(machine.Config.Guest.Cpus)},
 		MemoryMb:   types.Int64{Value: int64(machine.Config.Guest.MemoryMb)},
@@ -538,6 +546,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 		Region:     types.String{Value: updatedMachine.Region},
 		Id:         types.String{Value: updatedMachine.ID},
 		App:        types.String{Value: state.App.Value},
+		PrivateIP:  types.String{Value: updatedMachine.PrivateIP},
 		Image:      types.String{Value: updatedMachine.Config.Image},
 		Cpus:       types.Int64{Value: int64(updatedMachine.Config.Guest.Cpus)},
 		MemoryMb:   types.Int64{Value: int64(updatedMachine.Config.Guest.MemoryMb)},

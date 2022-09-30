@@ -23,11 +23,11 @@ var _ resource.ResourceWithImportState = flyAppResource{}
 type flyAppResourceType struct{}
 
 type flyAppResourceData struct {
-	Name    types.String `tfsdk:"name"`
-	Org     types.String `tfsdk:"org"`
-	OrgId   types.String `tfsdk:"orgid"`
-	AppUrl  types.String `tfsdk:"appurl"`
-	Id      types.String `tfsdk:"id"`
+	Name   types.String `tfsdk:"name"`
+	Org    types.String `tfsdk:"org"`
+	OrgId  types.String `tfsdk:"orgid"`
+	AppUrl types.String `tfsdk:"appurl"`
+	Id     types.String `tfsdk:"id"`
 	//Secrets types.Map    `tfsdk:"secrets"`
 }
 
@@ -125,7 +125,7 @@ func (r flyAppResource) Create(ctx context.Context, req resource.CreateRequest, 
 		Id:     types.String{Value: mresp.CreateApp.App.Id},
 	}
 
-	//if !data.Secrets.Null && !data.Secrets.Unknown {
+	//if len(data.Secrets.Elems) > 0 {
 	//	var rawSecrets map[string]string
 	//	data.Secrets.ElementsAs(context.Background(), &rawSecrets, false)
 	//	var secrets []graphql.SecretInput
@@ -219,7 +219,7 @@ func (r flyAppResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		resp.Diagnostics.AddError("Can't mutate Name of existing app", "Can't switch name "+state.Name.Value+" to "+plan.Name.Value)
 	}
 
-	//if !plan.Secrets.Null && !plan.Secrets.Unknown {
+	//if len(plan.Secrets.Elems) > 0 {
 	//	var rawSecrets map[string]string
 	//	plan.Secrets.ElementsAs(context.Background(), &rawSecrets, false)
 	//	var secrets []graphql.SecretInput
