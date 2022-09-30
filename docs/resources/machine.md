@@ -78,6 +78,7 @@ resource "fly_machine" "exampleMachine" {
 ### Read-Only
 
 - `id` (String) machine id
+- `privateip` (String) Private IP
 
 <a id="nestedatt--mounts"></a>
 ### Nested Schema for `mounts`
