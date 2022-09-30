@@ -126,7 +126,7 @@ func (s *WireGuardState) TunnelConfig() *Config {
 	_, rnet, _ := net.ParseCIDR(fmt.Sprintf("%s/48", raddr))
 
 	raddr[15] = 3
-	dns := net.ParseIP(raddr.String())
+	dnsAddr := net.ParseIP(raddr.String())
 
 	wgl := *lnet
 	wgr := *rnet
@@ -137,7 +137,7 @@ func (s *WireGuardState) TunnelConfig() *Config {
 		RemotePublicKey: pkey,
 		RemoteNetwork:   &wgr,
 		Endpoint:        s.Peer.Endpointip + ":51820",
-		DNS:             dns,
+		DNS:             dnsAddr,
 	}
 }
 
@@ -154,7 +154,7 @@ type Tunnel struct {
 	resolv   *net.Resolver
 }
 
-func doConnect(ctx context.Context, state *WireGuardState, apiClient *rawgql.Client) (*Tunnel, error) {
+func doConnect(_ context.Context, state *WireGuardState, apiClient *rawgql.Client) (*Tunnel, error) {
 	cfg := state.TunnelConfig()
 
 	localNetworkIp, _ := netip.AddrFromSlice(cfg.LocalNetwork.IP)
@@ -187,13 +187,14 @@ func doConnect(ctx context.Context, state *WireGuardState, apiClient *rawgql.Cli
 	wgDev := device.NewDevice(tunDev, conn.NewDefaultBind(), device.NewLogger(cfg.LogLevel, "(fly-provider-tunnel) "))
 
 	wgConf := bytes.NewBuffer(nil)
-	fmt.Println(cfg.RemoteNetwork)
-	fmt.Println("ENDPOINT ADDR:", endpointAddr)
-	fmt.Fprintf(wgConf, "private_key=%s\n", cfg.LocalPrivateKey.ToHex())
-	fmt.Fprintf(wgConf, "public_key=%s\n", cfg.RemotePublicKey.ToHex())
-	fmt.Fprintf(wgConf, "endpoint=%s\n", endpointAddr)
-	fmt.Fprintf(wgConf, "allowed_ip=%s\n", cfg.RemoteNetwork)
-	fmt.Fprintf(wgConf, "persistent_keepalive_interval=%d\n", cfg.KeepAlive)
+	_, err = fmt.Fprintf(wgConf, "private_key=%s\n", cfg.LocalPrivateKey.ToHex())
+	_, err = fmt.Fprintf(wgConf, "public_key=%s\n", cfg.RemotePublicKey.ToHex())
+	_, err = fmt.Fprintf(wgConf, "endpoint=%s\n", endpointAddr)
+	_, err = fmt.Fprintf(wgConf, "allowed_ip=%s\n", cfg.RemoteNetwork)
+	_, err = fmt.Fprintf(wgConf, "persistent_keepalive_interval=%d\n", cfg.KeepAlive)
+	if err != nil {
+		return nil, errors.New("error setting wgConf (fmt.Fprintf): " + err.Error())
+	}
 
 	if err := wgDev.IpcSetOperation(bufio.NewReader(wgConf)); err != nil {
 		return nil, err
@@ -322,12 +323,22 @@ func (t *Tunnel) QueryDNS(ctx context.Context, msg *dns.Msg) (*dns.Msg, error) {
 	if err != nil {
 		return nil, errors.New("tunnel error (QueryDNS-DialContext): " + err.Error())
 	}
-	defer c.Close()
+	defer func(c net.Conn) {
+		err := c.Close()
+		if err != nil {
+			//TODO(dov): do something in this case
+		}
+	}(c)
 
-	conn := &dns.Conn{Conn: c}
-	defer conn.Close()
+	dnsConn := &dns.Conn{Conn: c}
+	defer func(dnsConn *dns.Conn) {
+		err := dnsConn.Close()
+		if err != nil {
+			//TODO(dov): do something in this case
+		}
+	}(dnsConn)
 
-	r, _, err := client.ExchangeWithConn(msg, conn)
+	r, _, err := client.ExchangeWithConn(msg, dnsConn)
 	return r, err
 }
 

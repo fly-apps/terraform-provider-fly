@@ -143,6 +143,12 @@ func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string,
 	if req.Config.Guest.CpuType == "" {
 		req.Config.Guest.CpuType = "shared"
 	}
+	if req.Config.Guest.Cpus == 0 {
+		req.Config.Guest.Cpus = 1
+	}
+	if req.Config.Guest.MemoryMb == 0 {
+		req.Config.Guest.MemoryMb = 256
+	}
 	createResponse, err := a.httpClient.R().SetBody(req).SetResult(res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", a.endpoint, app))
 
 	if err != nil {
@@ -158,6 +164,12 @@ func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string,
 func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string, id string, res *MachineResponse) error {
 	if req.Config.Guest.CpuType == "" {
 		req.Config.Guest.CpuType = "shared"
+	}
+	if req.Config.Guest.Cpus == 0 {
+		req.Config.Guest.Cpus = 1
+	}
+	if req.Config.Guest.MemoryMb == 0 {
+		req.Config.Guest.MemoryMb = 256
 	}
 	lease, err := a.LockMachine(app, id, 30)
 	if err != nil {
