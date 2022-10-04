@@ -31,6 +31,12 @@ func testFlyMachineResourceConfig(name string) string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
@@ -63,6 +69,12 @@ func testFlyMachineResourceUpdateConfig(name string) string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
@@ -110,6 +122,12 @@ func testFlyMachineResourceNoServicesConfig(name string) string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
@@ -141,6 +159,12 @@ func testFlyMachineResourceEmptyServicesConfig(name string) string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
@@ -167,6 +191,7 @@ func TestAccFlyMachineInitOptions(t *testing.T) {
 					resource.TestCheckResourceAttr("fly_machine.testMachine", "name", rName),
 					resource.TestCheckResourceAttr("fly_machine.testMachine", "cmd.0", "cmdText"),
 					resource.TestCheckResourceAttr("fly_machine.testMachine", "entrypoint.0", "entrypointText"),
+					resource.TestCheckResourceAttr("fly_machine.testMachine", "exec.0", "execText"),
 				),
 			},
 		},
@@ -177,6 +202,12 @@ func testFlyMachineResourceInitOptionsConfig(name string) string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
@@ -187,6 +218,7 @@ resource "fly_machine" "testMachine" {
     }
     cmd = ["cmdText"]
     entrypoint = ["entrypointText"]
+	exec = ["execText"]
 }
 `, app, name)
 }
@@ -212,6 +244,12 @@ func testFlyMachineResourceChangeImageConfig(name string) string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
@@ -256,11 +294,16 @@ func TestAccFlyMachineEmptyName(t *testing.T) {
 	})
 }
 
-
 func testFlyMachineResourceEmptyNameConfig() string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
@@ -292,6 +335,12 @@ func testFlyMachineResourceEmptyNameUpdateConfig() string {
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelregion = "ewr"
+}
+
 resource "fly_machine" "testMachine" {
 	app = "%s"
 	region = "ewr"
