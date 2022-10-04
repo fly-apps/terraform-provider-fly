@@ -65,11 +65,12 @@ resource "fly_machine" "exampleMachine" {
 ### Optional
 
 - `app` (String) fly app
-- `cmd` (List of String) exec command
+- `cmd` (List of String) cmd
 - `cpus` (Number) cpu count
 - `cputype` (String) cpu type
 - `entrypoint` (List of String) image entrypoint
 - `env` (Map of String) Optional environment variables, keys and values must be strings
+- `exec` (List of String) exec command
 - `memorymb` (Number) memory mb
 - `mounts` (Attributes List) Volume mounts (see [below for nested schema](#nestedatt--mounts))
 - `name` (String) machine name
