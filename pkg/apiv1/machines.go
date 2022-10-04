@@ -38,6 +38,7 @@ type Service struct {
 type InitConfig struct {
 	Cmd        []string `json:"cmd,omitempty"`
 	Entrypoint []string `json:"entrypoint,omitempty"`
+	Exec       []string `json:"exec,omitempty"`
 }
 
 type MachineConfig struct {
@@ -71,7 +72,7 @@ type MachineResponse struct {
 	Config     struct {
 		Env  map[string]string `json:"env"`
 		Init struct {
-			//Exec       interface{} `json:"exec"`
+			Exec       []string `json:"exec"`
 			Entrypoint []string `json:"entrypoint"`
 			Cmd        []string `json:"cmd"`
 			//Tty        bool        `json:"tty"`
@@ -166,9 +167,11 @@ func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string,
 		req.Config.Guest.CpuType = "shared"
 	}
 	if req.Config.Guest.Cpus == 0 {
+		//You can't have a machine with no cpus
 		req.Config.Guest.Cpus = 1
 	}
 	if req.Config.Guest.MemoryMb == 0 {
+		//You can't have a machine with no memory
 		req.Config.Guest.MemoryMb = 256
 	}
 	lease, err := a.LockMachine(app, id, 30)

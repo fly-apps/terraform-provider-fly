@@ -9,6 +9,7 @@ import (
 	"fmt"
 	rawgql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
+	"github.com/google/uuid"
 	"github.com/miekg/dns"
 	"golang.org/x/crypto/curve25519"
 	"golang.zx2c4.com/wireguard/conn"
@@ -343,7 +344,7 @@ func (t *Tunnel) QueryDNS(ctx context.Context, msg *dns.Msg) (*dns.Msg, error) {
 }
 
 func Establish(ctx context.Context, org string, region string, token string, client *rawgql.Client) (*Tunnel, error) {
-	peerName := "terraform-tunnel-" + strconv.FormatInt(time.Now().Unix(), 10)
+	peerName := "terraform-tunnel-" + strconv.FormatInt(time.Now().Unix(), 10) + uuid.New().String()
 	public, private := C25519pair()
 
 	peer, err := graphql.AddWireguardPeer(ctx, *client, graphql.AddWireGuardPeerInput{

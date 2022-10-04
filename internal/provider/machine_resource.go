@@ -51,6 +51,7 @@ type flyMachineResourceData struct {
 	Env        types.Map    `tfsdk:"env"`
 	Cmd        []string     `tfsdk:"cmd"`
 	Entrypoint []string     `tfsdk:"entrypoint"`
+	Exec       []string     `tfsdk:"exec"`
 
 	Mounts   []TfMachineMount `tfsdk:"mounts"`
 	Services []TfService      `tfsdk:"services"`
@@ -100,13 +101,19 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 				Type:                types.StringType,
 			},
 			"cmd": {
-				MarkdownDescription: "exec command",
+				MarkdownDescription: "cmd",
 				Optional:            true,
 				//Computed:            true,
 				Type: types.ListType{ElemType: types.StringType},
 			},
 			"entrypoint": {
 				MarkdownDescription: "image entrypoint",
+				Optional:            true,
+				//Computed:            true,
+				Type: types.ListType{ElemType: types.StringType},
+			},
+			"exec": {
+				MarkdownDescription: "exec command",
 				Optional:            true,
 				//Computed:            true,
 				Type: types.ListType{ElemType: types.StringType},
@@ -289,6 +296,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 			Init: apiv1.InitConfig{
 				Cmd:        data.Cmd,
 				Entrypoint: data.Entrypoint,
+				Exec:       data.Exec,
 			},
 		},
 	}
@@ -352,6 +360,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 		CpuType:    types.String{Value: newMachine.Config.Guest.CPUKind},
 		Cmd:        newMachine.Config.Init.Cmd,
 		Entrypoint: newMachine.Config.Init.Entrypoint,
+		Exec:       newMachine.Config.Init.Exec,
 		Env:        env,
 		Services:   tfservices,
 	}
@@ -423,6 +432,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 		CpuType:    types.String{Value: machine.Config.Guest.CPUKind},
 		Cmd:        machine.Config.Init.Cmd,
 		Entrypoint: machine.Config.Init.Entrypoint,
+		Exec:       machine.Config.Init.Exec,
 		Env:        env,
 		Services:   tfservices,
 	}
@@ -490,6 +500,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 			Init: apiv1.InitConfig{
 				Cmd:        plan.Cmd,
 				Entrypoint: plan.Entrypoint,
+				Exec:       plan.Exec,
 			},
 		},
 	}
@@ -553,6 +564,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 		CpuType:    types.String{Value: updatedMachine.Config.Guest.CPUKind},
 		Cmd:        updatedMachine.Config.Init.Cmd,
 		Entrypoint: updatedMachine.Config.Init.Entrypoint,
+		Exec:       updatedMachine.Config.Init.Exec,
 		Env:        env,
 		Services:   tfservices,
 	}
