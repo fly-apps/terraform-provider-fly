@@ -29,7 +29,7 @@ type appDataSourceOutput struct {
 	Healthchecks   []string     `tfsdk:"healthchecks"`
 	Ipaddresses    []string     `tfsdk:"ipaddresses"`
 	Currentrelease types.String `tfsdk:"currentrelease"`
-	Secrets        types.Map    `tfsdk:"secrets"`
+	//Secrets        types.Map    `tfsdk:"secrets"`
 }
 
 func (a appDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
