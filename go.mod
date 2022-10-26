@@ -1,6 +1,6 @@
 module github.com/fly-apps/terraform-provider-fly
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Khan/genqlient v0.5.0
@@ -12,9 +12,8 @@ require (
 	github.com/imroc/req/v3 v3.22.0
 	github.com/miekg/dns v1.1.50
 	github.com/vektah/gqlparser/v2 v2.5.1
-	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
-	golang.zx2c4.com/wireguard v0.0.0-20220407013110-ef5c587f782d
-	golang.zx2c4.com/wireguard/tun/netstack v0.0.0-20220407013110-ef5c587f782d
+	golang.org/x/crypto v0.1.0
+	golang.zx2c4.com/wireguard v0.0.0-20220920152132-bb719d3a6e2c
 )
 
 require (
@@ -70,9 +69,9 @@ require (
 	github.com/zclconf/go-cty v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20220909182711-5c715a9e8561 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
-	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20211104114900-415007cec224 // indirect
@@ -81,5 +80,5 @@ require (
 	google.golang.org/grpc v1.49.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gvisor.dev/gvisor v0.0.0-20211020211948-f76a604701b6 // indirect
+	gvisor.dev/gvisor v0.0.0-20220817001344-846276b3dbc5 // indirect
 )
