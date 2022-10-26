@@ -4,6 +4,8 @@
 
 [![Tests](https://github.com/fly-apps/terraform-provider-fly/actions/workflows/test.yml/badge.svg)](https://github.com/fly-apps/terraform-provider-fly/actions/workflows/test.yml)
 
+**DO NOT USE THIS PROVIDER. IT IS NO LONGER NECESSARY. USE THE OFFICIAL PROVIDER [HERE](https://github.com/fly-apps/terraform-provider-fly).**
+
 ### Resources
 - app (stable, but apps will be deprecated soon. Begin to favor machines.)
 - cert (stable)
