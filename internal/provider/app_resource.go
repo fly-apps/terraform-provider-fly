@@ -27,6 +27,16 @@ type flyAppResourceData struct {
 	//Secrets types.Map    `tfsdk:"secrets"`
 }
 
+func appDataFromGraphql(f graphql.AppFragment) flyAppResourceData {
+	return flyAppResourceData{
+		Name:   types.String{Value: f.Name},
+		Org:    types.String{Value: f.Organization.Slug},
+		OrgId:  types.String{Value: f.Organization.Id},
+		AppUrl: types.String{Value: f.AppUrl},
+		Id:     types.String{Value: f.Id},
+	}
+}
+
 func (r flyAppResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "fly_app"
 }
@@ -113,13 +123,7 @@ func (r flyAppResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	data = flyAppResourceData{
-		Org:    types.String{Value: mresp.CreateApp.App.Organization.Slug},
-		OrgId:  types.String{Value: mresp.CreateApp.App.Organization.Id},
-		Name:   types.String{Value: mresp.CreateApp.App.Name},
-		AppUrl: types.String{Value: mresp.CreateApp.App.AppUrl},
-		Id:     types.String{Value: mresp.CreateApp.App.Id},
-	}
+	data = appDataFromGraphql(mresp.CreateApp.App)
 
 	//if len(data.Secrets.Elems) > 0 {
 	//	var rawSecrets map[string]string
@@ -160,7 +164,7 @@ func (r flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	query, err := graphql.GetFullApp(context.Background(), r.gqlClient, state.Name.Value)
+	query, err := graphql.GetApp(context.Background(), r.gqlClient, state.Name.Value)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -173,13 +177,7 @@ func (r flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
 	}
 
-	data := flyAppResourceData{
-		Name:   types.String{Value: query.App.Name},
-		Org:    types.String{Value: query.App.Organization.Slug},
-		OrgId:  types.String{Value: query.App.Organization.Id},
-		AppUrl: types.String{Value: query.App.AppUrl},
-		Id:     types.String{Value: query.App.Id},
-	}
+	data := appDataFromGraphql(query.App)
 
 	//if !state.Secrets.Null && !state.Secrets.Unknown {
 	//	data.Secrets = state.Secrets
