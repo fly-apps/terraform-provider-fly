@@ -8,7 +8,6 @@ import (
 	"github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -16,14 +15,15 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-var _ tfsdkprovider.ResourceType = flyIpResourceType{}
-var _ resource.Resource = flyIpResource{}
-var _ resource.ResourceWithImportState = flyIpResource{}
-
-type flyIpResourceType struct{}
+var _ resource.ResourceWithConfigure = &flyIpResource{}
+var _ resource.ResourceWithImportState = &flyIpResource{}
 
 type flyIpResource struct {
-	provider provider
+	flyResource
+}
+
+func newFlyIpResource() resource.Resource {
+	return &flyIpResource{}
 }
 
 type flyIpResourceData struct {
@@ -34,7 +34,11 @@ type flyIpResourceData struct {
 	Type    types.String `tfsdk:"type"`
 }
 
-func (t flyIpResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (ir flyIpResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_ip"
+}
+
+func (flyIpResource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Fly ip resource",
 		Attributes: map[string]tfsdk.Attribute{
@@ -70,14 +74,6 @@ func (t flyIpResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagno
 	}, nil
 }
 
-func (t flyIpResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyIpResource{
-		provider: provider,
-	}, diags
-}
-
 func (ir flyIpResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyIpResourceData
 
@@ -86,7 +82,7 @@ func (ir flyIpResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", data))
 
-	q, err := graphql.AllocateIpAddress(context.Background(), *ir.provider.client, data.Appid.Value, data.Region.Value, graphql.IPAddressType(data.Type.Value))
+	q, err := graphql.AllocateIpAddress(context.Background(), ir.gqlClient, data.Appid.Value, data.Region.Value, graphql.IPAddressType(data.Type.Value))
 	tflog.Info(ctx, fmt.Sprintf("query res in create ip: %+v", q))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ip addr", err.Error())
@@ -118,7 +114,7 @@ func (ir flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	addr := data.Address.Value
 	app := data.Appid.Value
 
-	query, err := graphql.IpAddressQuery(context.Background(), *ir.provider.client, app, addr)
+	query, err := graphql.IpAddressQuery(context.Background(), ir.gqlClient, app, addr)
 	tflog.Info(ctx, fmt.Sprintf("Query res: for %s %s %+v", app, addr, query))
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
@@ -160,7 +156,7 @@ func (ir flyIpResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	resp.Diagnostics.Append(diags...)
 
 	if !data.Id.Unknown && !data.Id.Null && data.Id.Value != "" {
-		_, err := graphql.ReleaseIpAddress(context.Background(), *ir.provider.client, data.Id.Value)
+		_, err := graphql.ReleaseIpAddress(context.Background(), ir.gqlClient, data.Id.Value)
 		if err != nil {
 			resp.Diagnostics.AddError("Release ip failed", err.Error())
 		}

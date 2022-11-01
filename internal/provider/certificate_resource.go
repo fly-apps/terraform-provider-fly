@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -13,18 +12,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	"strings"
 )
 
-var _ tfsdkprovider.ResourceType = flyCertResourceType{}
-var _ resource.Resource = flyCertResource{}
-var _ resource.ResourceWithImportState = flyCertResource{}
-
-type flyCertResourceType struct{}
+var _ resource.ResourceWithConfigure = &flyCertResource{}
+var _ resource.ResourceWithImportState = &flyCertResource{}
 
 type flyCertResource struct {
-	provider provider
+	flyResource
+}
+
+func newFlyCertResource() resource.Resource {
+	return &flyCertResource{}
 }
 
 type flyCertResourceData struct {
@@ -37,7 +36,11 @@ type flyCertResourceData struct {
 	Check                     types.Bool   `tfsdk:"check"`
 }
 
-func (t flyCertResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (cr flyCertResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_cert"
+}
+
+func (flyCertResource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Fly certificate resource",
 		Attributes: map[string]tfsdk.Attribute{
@@ -80,21 +83,13 @@ func (t flyCertResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 	}, nil
 }
 
-func (t flyCertResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyCertResource{
-		provider: provider,
-	}, diags
-}
-
 func (cr flyCertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyCertResourceData
 
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	q, err := graphql.AddCertificate(context.Background(), *cr.provider.client, data.Appid.Value, data.Hostname.Value)
+	q, err := graphql.AddCertificate(context.Background(), cr.gqlClient, data.Appid.Value, data.Hostname.Value)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create cert", err.Error())
 	}
@@ -127,7 +122,7 @@ func (cr flyCertResource) Read(ctx context.Context, req resource.ReadRequest, re
 	hostname := data.Hostname.Value
 	app := data.Appid.Value
 
-	query, err := graphql.GetCertificate(context.Background(), *cr.provider.client, app, hostname)
+	query, err := graphql.GetCertificate(context.Background(), cr.gqlClient, app, hostname)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -168,7 +163,7 @@ func (cr flyCertResource) Delete(ctx context.Context, req resource.DeleteRequest
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	_, err := graphql.DeleteCertificate(context.Background(), *cr.provider.client, data.Appid.Value, data.Hostname.Value)
+	_, err := graphql.DeleteCertificate(context.Background(), cr.gqlClient, data.Appid.Value, data.Hostname.Value)
 	if err != nil {
 		resp.Diagnostics.AddError("Delete cert failed", err.Error())
 	}

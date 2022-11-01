@@ -12,19 +12,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
-var _ tfsdkprovider.ResourceType = flyMachineResourceType{}
-var _ resource.Resource = flyMachineResource{}
-var _ resource.ResourceWithImportState = flyMachineResource{}
-
-type flyMachineResourceType struct{}
+var _ resource.ResourceWithConfigure = &flyMachineResource{}
+var _ resource.ResourceWithImportState = &flyMachineResource{}
 
 type flyMachineResource struct {
-	provider provider
-	endpoint string
+	flyResource
+}
+
+func newFlyMachineResource() resource.Resource {
+	return &flyMachineResource{}
 }
 
 type TfPort struct {
@@ -64,7 +62,11 @@ type TfMachineMount struct {
 	Volume    types.String `tfsdk:"volume"`
 }
 
-func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (mr flyMachineResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_machine"
+}
+
+func (flyMachineResource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Fly machine resource",
 		Attributes: map[string]tfsdk.Attribute{
@@ -209,16 +211,8 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 	}, nil
 }
 
-func (mr flyMachineResourceType) NewResource(_ context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyMachineResource{
-		provider: provider,
-	}, diags
-}
-
 func (mr flyMachineResource) ValidateOpenTunnel() (bool, error) {
-	_, err := mr.provider.httpClient.R().Get(fmt.Sprintf("http://%s", mr.provider.httpEndpoint))
+	_, err := mr.httpClient.R().Get(fmt.Sprintf("http://%s", mr.httpEndpoint))
 	if err != nil {
 		return false, errors.New("can't connect to the api, is the tunnel open? :)")
 	}
@@ -329,7 +323,7 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 		createReq.Config.Mounts = mounts
 	}
 
-	machineAPI := apiv1.NewMachineAPI(mr.provider.httpClient, mr.provider.httpEndpoint)
+	machineAPI := apiv1.NewMachineAPI(&mr.httpClient, mr.httpEndpoint)
 
 	var newMachine apiv1.MachineResponse
 	err = machineAPI.CreateMachine(createReq, data.App.Value, &newMachine)
@@ -402,7 +396,7 @@ func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	machineAPI := apiv1.NewMachineAPI(mr.provider.httpClient, mr.provider.httpEndpoint)
+	machineAPI := apiv1.NewMachineAPI(&mr.httpClient, mr.httpEndpoint)
 
 	var machine apiv1.MachineResponse
 
@@ -538,7 +532,7 @@ func (mr flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 		updateReq.Config.Mounts = mounts
 	}
 
-	machineApi := apiv1.NewMachineAPI(mr.provider.httpClient, mr.provider.httpEndpoint)
+	machineApi := apiv1.NewMachineAPI(&mr.httpClient, mr.httpEndpoint)
 
 	var updatedMachine apiv1.MachineResponse
 
@@ -604,7 +598,7 @@ func (mr flyMachineResource) Delete(ctx context.Context, req resource.DeleteRequ
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
 	}
 
-	machineApi := apiv1.NewMachineAPI(mr.provider.httpClient, mr.provider.httpEndpoint)
+	machineApi := apiv1.NewMachineAPI(&mr.httpClient, mr.httpEndpoint)
 
 	err = machineApi.DeleteMachine(data.App.Value, data.Id.Value, 50)
 
