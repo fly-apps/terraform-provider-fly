@@ -9,15 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/vektah/gqlparser/v2/gqlerror"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdkprovider.DataSourceType = certDataSourceType{}
-var _ datasource.DataSource = certDataSource{}
-
-type certDataSourceType struct{}
+var _ datasource.DataSourceWithConfigure = &certDataSource{}
 
 // Matches getSchema
 type certDataSourceOutput struct {
@@ -30,7 +24,11 @@ type certDataSourceOutput struct {
 	Check                     types.Bool   `tfsdk:"check"`
 }
 
-func (t certDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (d certDataSource) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = "fly_cert"
+}
+
+func (d certDataSource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Fly certificate data source",
 		Attributes: map[string]tfsdk.Attribute{
@@ -73,12 +71,8 @@ func (t certDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.D
 	}, nil
 }
 
-func (t certDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return certDataSource{
-		provider: provider,
-	}, diags
+func newCertDataSource() datasource.DataSource {
+	return &certDataSource{}
 }
 
 func (d certDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -94,7 +88,7 @@ func (d certDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	hostname := data.Hostname.Value
 	app := data.Appid.Value
 
-	query, err := graphql.GetCertificate(context.Background(), *d.provider.client, app, hostname)
+	query, err := graphql.GetCertificate(context.Background(), d.gqlClient, app, hostname)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {

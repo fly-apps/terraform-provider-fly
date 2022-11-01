@@ -12,15 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdkprovider.DataSourceType = ipDataSourceType{}
-var _ datasource.DataSource = ipDataSource{}
-
-type ipDataSourceType struct{}
+var _ datasource.DataSourceWithConfigure = &ipDataSource{}
 
 // Matches getSchema
 type ipDataSourceOutput struct {
@@ -31,7 +25,11 @@ type ipDataSourceOutput struct {
 	Type    types.String `tfsdk:"type"`
 }
 
-func (i ipDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (i ipDataSource) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = "fly_ip"
+}
+
+func (i ipDataSource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Fly ip data source",
 		Attributes: map[string]tfsdk.Attribute{
@@ -67,12 +65,8 @@ func (i ipDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 	}, nil
 }
 
-func (i ipDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return ipDataSource{
-		provider: provider,
-	}, diags
+func newIpDataSource() datasource.DataSource {
+	return &ipDataSource{}
 }
 
 func (i ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -88,7 +82,7 @@ func (i ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp
 	addr := data.Address.Value
 	app := data.Appid.Value
 
-	query, err := graphql.IpAddressQuery(context.Background(), *i.provider.client, app, addr)
+	query, err := graphql.IpAddressQuery(context.Background(), i.gqlClient, app, addr)
 	tflog.Info(ctx, fmt.Sprintf("Query res: for %s %s %+v", app, addr, query))
 	var errList gqlerror.List
 	if errors.As(err, &errList) {

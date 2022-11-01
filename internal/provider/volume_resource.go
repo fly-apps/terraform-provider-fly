@@ -6,21 +6,21 @@ import (
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-var _ tfsdkprovider.ResourceType = flyVolumeResourceType{}
-var _ resource.Resource = flyVolumeResource{}
-var _ resource.ResourceWithImportState = flyVolumeResource{}
-
-type flyVolumeResourceType struct{}
+var _ resource.ResourceWithConfigure = &flyVolumeResource{}
+var _ resource.ResourceWithImportState = &flyVolumeResource{}
 
 type flyVolumeResource struct {
-	provider provider
+	flyResource
+}
+
+func newFlyVolumeResource() resource.Resource {
+	return &flyVolumeResource{}
 }
 
 type flyVolumeResourceData struct {
@@ -32,7 +32,11 @@ type flyVolumeResourceData struct {
 	Internalid types.String `tfsdk:"internalid"`
 }
 
-func (t flyVolumeResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (vr flyVolumeResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_volume"
+}
+
+func (vr flyVolumeResource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Fly volume resource",
 		Attributes: map[string]tfsdk.Attribute{
@@ -72,21 +76,13 @@ func (t flyVolumeResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Di
 	}, nil
 }
 
-func (t flyVolumeResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyVolumeResource{
-		provider: provider,
-	}, diags
-}
-
 func (vr flyVolumeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyVolumeResourceData
 
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	q, err := graphql.CreateVolume(context.Background(), *vr.provider.client, data.Appid.Value, data.Name.Value, data.Region.Value, int(data.Size.Value))
+	q, err := graphql.CreateVolume(context.Background(), vr.gqlClient, data.Appid.Value, data.Name.Value, data.Region.Value, int(data.Size.Value))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create volume", err.Error())
 	}
@@ -118,7 +114,7 @@ func (vr flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, 
 	internalId := data.Internalid.Value
 	app := data.Appid.Value
 
-	query, err := graphql.VolumeQuery(context.Background(), *vr.provider.client, app, internalId)
+	query, err := graphql.VolumeQuery(context.Background(), vr.gqlClient, app, internalId)
 	if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
 	}
@@ -151,7 +147,7 @@ func (vr flyVolumeResource) Delete(ctx context.Context, req resource.DeleteReque
 	resp.Diagnostics.Append(diags...)
 
 	if !data.Id.Unknown && !data.Id.Null && data.Id.Value != "" {
-		_, err := graphql.DeleteVolume(context.Background(), *vr.provider.client, data.Id.Value)
+		_, err := graphql.DeleteVolume(context.Background(), vr.gqlClient, data.Id.Value)
 		if err != nil {
 			resp.Diagnostics.AddError("Delete volume failed", err.Error())
 		}

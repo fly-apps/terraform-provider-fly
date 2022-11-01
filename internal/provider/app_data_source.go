@@ -2,21 +2,14 @@ package provider
 
 import (
 	"context"
-
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdkprovider.DataSourceType = appDataSourceType{}
-var _ datasource.DataSource = appDataSource{}
-
-type appDataSourceType struct{}
+var _ datasource.DataSourceWithConfigure = &appDataSource{}
 
 // Matches getSchema
 type appDataSourceOutput struct {
@@ -32,7 +25,11 @@ type appDataSourceOutput struct {
 	//Secrets        types.Map    `tfsdk:"secrets"`
 }
 
-func (a appDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (d appDataSource) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = "fly_app"
+}
+
+func (appDataSource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: "Retrieve info about graphql app",
 
@@ -78,12 +75,8 @@ func (a appDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Di
 	}, nil
 }
 
-func (a appDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return appDataSource{
-		provider: provider,
-	}, diags
+func newAppDataSource() datasource.DataSource {
+	return &appDataSource{}
 }
 
 func (d appDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -98,7 +91,7 @@ func (d appDataSource) Read(ctx context.Context, req datasource.ReadRequest, res
 
 	appName := data.Name.Value
 
-	queryresp, err := graphql.GetFullApp(context.Background(), *d.provider.client, appName)
+	queryresp, err := graphql.GetFullApp(context.Background(), d.gqlClient, appName)
 	if err != nil {
 		resp.Diagnostics.AddError("Query failed", err.Error())
 	}
