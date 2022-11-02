@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"os"
@@ -20,4 +21,32 @@ func testAccPreCheck(t *testing.T) {
 	if !hasApp {
 		t.Fatalf("Need app in FLY_TF_TEST_APP")
 	}
+}
+
+func getTestOrg() string {
+	org, ok := os.LookupEnv("FLY_TF_TEST_ORG")
+	if ok {
+		return org
+	} else {
+		return "fly-terraform-ci"
+	}
+}
+
+func getTestRegion() string {
+	region, ok := os.LookupEnv("FLY_TF_TEST_REGION")
+	if ok {
+		return region
+	} else {
+		return "ewr"
+	}
+}
+
+func providerConfig() string {
+	return fmt.Sprintf(`
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "%s"
+  internaltunnelregion = "%s"
+}
+`, getTestOrg(), getTestRegion())
 }
