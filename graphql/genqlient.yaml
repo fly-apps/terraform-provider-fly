@@ -6,4 +6,6 @@ operations:
 bindings:
   JSON:
     type: interface{}
+  ISO8601DateTime:
+    type: time.Time
 generated: generated.go
