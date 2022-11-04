@@ -369,7 +369,7 @@ func (r flyAppResource) setSecrets(ctx context.Context, appName string, secrets 
 		if errors.As(err, &errList) && len(errList) == 1 && strings.Contains(errList[0].Message, "No change detected") {
 			diags.AddWarning("SetSecrets was no-op", err.Error())
 			// Secrets may have been added outside of Terraform. To prevent unknown value errors, we need to fetch
-			// digest and createdAt attributes for secrets that don't have those values missing in state
+			// digest and createdAt attributes for secrets that are missing those values in state
 			diags.AddWarning("State may have drifted", "Secrets may have been added or changed outside of Terraform. Refreshing secret state, you may need to re-apply your Terraform config.")
 			r.getSecretComputedValues(ctx, appName, secrets, diags)
 		} else {
