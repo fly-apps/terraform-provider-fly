@@ -129,7 +129,8 @@ func (r flyAppResource) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnosti
 				Type:                types.StringType,
 			},
 			"secrets": {
-				Optional: true,
+				Optional:    true,
+				Description: "Secret environment variables. Keys are case sensitive and are used as environment variable names. Does not override existing secrets added outside of Terraform.",
 				Attributes: tfsdk.MapNestedAttributes(map[string]tfsdk.Attribute{
 					"value": {
 						Type:      types.StringType,
@@ -379,6 +380,9 @@ func (r flyAppResource) setSecrets(ctx context.Context, appName string, secrets 
 	}
 
 	for _, s := range resp.SetSecrets.App.Secrets {
+		if _, ok := secrets[s.Name]; !ok {
+			continue
+		}
 		secrets[s.Name] = appSecret{
 			Value:     secrets[s.Name].Value,
 			Digest:    types.String{Value: s.Digest},

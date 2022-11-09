@@ -204,6 +204,49 @@ resource "fly_app" "%s" {
 				),
 			},
 
+			// Verify that we don't touch unmanaged secrets
+			{
+				PreConfig: func() {
+					_, err := providerGraphql.SetSecrets(context.Background(), client, providerGraphql.SetSecretsInput{
+						AppId: name,
+						Secrets: []providerGraphql.SecretInput{{
+							Key:   "UNMANAGED",
+							Value: "1",
+						}},
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+				},
+				Config: fmt.Sprintf(`
+%s
+resource "fly_app" "%s" {
+	name = "%s"
+	org = "%s"
+	secrets = {
+		TEST = {value = "3"}
+	}
+}
+`, providerConfig(), appName, name, getTestOrg()),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "secrets.TEST.digest"),
+					resource.TestCheckNoResourceAttr(resourceName, "secrets.UNMANAGED.digest"),
+					func(state *terraform.State) error {
+						r, err := providerGraphql.GetSecrets(context.Background(), client, name)
+						if err != nil {
+							return err
+						}
+
+						if len(r.App.Secrets) == 1 && r.App.Secrets[0].Name == "TEST" {
+							return errors.New("unmanaged secret disappeared")
+						} else if len(r.App.Secrets) != 2 {
+							return errors.New(fmt.Sprintf("unexpected secrets in API %v", r.App.Secrets))
+						}
+						return nil
+					},
+				),
+			},
+
 			{
 				Config: fmt.Sprintf(`
 %s
