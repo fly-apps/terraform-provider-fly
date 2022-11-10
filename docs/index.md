@@ -25,7 +25,7 @@ provider "fly" {
 ### Optional
 
 - `fly_api_token` (String) fly.io api token. If not set checks env for FLY_API_TOKEN
-- `fly_http_endpoint` (String) Where the provider should look to find the fly http endpoint
+- `fly_http_endpoint` (String) Where the clients should look to find the fly http endpoint
 - `internaltunnelorg` (String)
 - `internaltunnelregion` (String)
 - `useinternaltunnel` (Boolean)
