@@ -28,11 +28,24 @@ resource "fly_app" "exampleApp" {
 ### Optional
 
 - `org` (String) Optional org slug to operate upon
+- `secrets` (Attributes Map) Secret environment variables. Keys are case sensitive and are used as environment variable names. Does not override existing secrets added outside of Terraform. (see [below for nested schema](#nestedatt--secrets))
 
 ### Read-Only
 
 - `appurl` (String) readonly appUrl
 - `id` (String) readonly app id
 - `orgid` (String) readonly orgid
+
+<a id="nestedatt--secrets"></a>
+### Nested Schema for `secrets`
+
+Required:
+
+- `value` (String, Sensitive)
+
+Read-Only:
+
+- `created_at` (String)
+- `digest` (String)
 
 
