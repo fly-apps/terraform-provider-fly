@@ -22,3 +22,11 @@
 ### TODO
 
 1. Build abstraction around querying local tunnel
+
+
+### Build w/ Docker
+
+```
+docker build --pull -t provider-fly:latest .
+docker run --rm --entrypoint=cat provider-fly:latest /out/terraform-provider-fly > terraform-provider-fly
+```
