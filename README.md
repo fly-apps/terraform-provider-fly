@@ -36,3 +36,11 @@ To run acceptance tests for this provider some scaffolding is required.
 4. Got to the infra directory and run `terraform apply` to create the scaffolding.
 5. You should now be able to run `make` in the repo root to run tests.
 6. (Optional) set FLY_TF_TEST_REGION in `.make-overrides` to a region closer to you
+
+### Building with Docker
+If you don't have a local Go environment, you can build in a container:
+
+```
+docker build --pull -t provider-fly:latest .
+docker run --rm --entrypoint=cat provider-fly:latest /out/terraform-provider-fly > terraform-provider-fly
+```
