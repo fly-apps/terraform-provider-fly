@@ -92,7 +92,7 @@ func (mr flyMachineResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.
 			},
 			"app": {
 				MarkdownDescription: "fly app",
-				Optional:            true,
+				Required:            true,
 				Type:                types.StringType,
 			},
 			"privateip": {
