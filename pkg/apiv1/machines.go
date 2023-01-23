@@ -157,7 +157,7 @@ func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string,
 	}
 
 	if createResponse.StatusCode != http.StatusCreated && createResponse.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("Create request failed: %s, %+v", createResponse.Status, res))
+		return errors.New(fmt.Sprintf("Create request failed: %s, %+v", createResponse.Status, createResponse))
 	}
 	return nil
 }
@@ -187,7 +187,7 @@ func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string,
 		return err
 	}
 	if reqRes.StatusCode != http.StatusCreated && reqRes.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("Update request failed: %s, %+v", reqRes.Status, res))
+		return errors.New(fmt.Sprintf("Update request failed: %s, %+v", reqRes.Status, reqRes))
 	}
 	return nil
 }
