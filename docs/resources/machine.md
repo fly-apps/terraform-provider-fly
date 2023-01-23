@@ -59,12 +59,12 @@ resource "fly_machine" "exampleMachine" {
 
 ### Required
 
+- `app` (String) fly app
 - `image` (String) docker image
 - `region` (String) machine region
 
 ### Optional
 
-- `app` (String) fly app
 - `cmd` (List of String) cmd
 - `cpus` (Number) cpu count
 - `cputype` (String) cpu type
