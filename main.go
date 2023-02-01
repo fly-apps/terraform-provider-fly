@@ -7,6 +7,11 @@ import (
 
 	"github.com/fly-apps/terraform-provider-fly/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+
+    "github.com/pulumi/pulumi-terraform-bridge/pf/tfgen"
+
+	pf "github.com/pulumi/pulumi-terraform-bridge/pf/tfbridge"
+	"github.com/pulumi/pulumi-terraform-bridge/v3/pkg/tfbridge"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for the registry/website
@@ -28,20 +33,41 @@ var (
 	// commit  string = ""
 )
 
+func Provider() pf.ProviderInfo {
+	info := tfbridge.ProviderInfo{
+		Name:    "fly",
+		Version: version,
+		Resources: map[string]*tfbridge.ResourceInfo{
+			"myresource": {Tok: "myprovider::MyResource"},
+		},
+	}
+	return pf.ProviderInfo{
+		ProviderInfo: info,
+		NewProvider: func() shim.Provider {
+			return shim.New(version)
+		},
+	}
+}
+
 func main() {
 	var debug bool
 
 	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
-	flag.Parse()
+	flag.BoolVar(&pulumi, "pulumi", true, "set to true to pulumi gen")
+    flag.Parse()
 
-	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/fly-apps/fly",
-		Debug:   debug,
-	}
+    if flag.pulumi {
+        tfgen.Main("myprovider", Provider())
+    } else {
+        opts := providerserver.ServeOpts{
+            Address: "registry.terraform.io/fly-apps/fly",
+            Debug:   debug,
+        }
 
-	err := providerserver.Serve(context.Background(), provider.New(version), opts)
+        err := providerserver.Serve(context.Background(), provider.New(version), opts)
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+        if err != nil {
+            log.Fatal(err.Error())
+        }
+    }
 }
