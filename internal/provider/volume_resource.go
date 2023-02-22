@@ -51,6 +51,9 @@ func (t flyVolumeResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Di
 				MarkdownDescription: "Size of volume in gb",
 				Required:            true,
 				Type:                types.Int64Type,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					resource.RequiresReplace(),
+				},
 			},
 			"name": {
 				MarkdownDescription: "name",
