@@ -41,12 +41,18 @@ func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 				MarkdownDescription: "Name of application",
 				Required:            true,
 				Type:                types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					resource.RequiresReplace(),
+				},
 			},
 			"org": {
 				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "Optional org slug to operate upon",
 				Type:                types.StringType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					resource.RequiresReplace(),
+				},
 			},
 			"orgid": {
 				Computed:            true,
