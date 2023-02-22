@@ -42,12 +42,12 @@ func (t flyCertResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 		MarkdownDescription: "Fly certificate resource",
 		Attributes: map[string]tfsdk.Attribute{
 			"app": {
-				MarkdownDescription: "Name of app to attach",
+				MarkdownDescription: "Name of app to attach to",
 				Required:            true,
 				Type:                types.StringType,
 			},
 			"id": {
-				MarkdownDescription: "ID of address",
+				MarkdownDescription: "ID of certificate",
 				Computed:            true,
 				Type:                types.StringType,
 			},
