@@ -43,12 +43,12 @@ func (t flyVolumeResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Di
 				Optional:            true,
 			},
 			"app": {
-				MarkdownDescription: "Name of app to attach",
+				MarkdownDescription: "Name of app to attach to",
 				Required:            true,
 				Type:                types.StringType,
 			},
 			"size": {
-				MarkdownDescription: "Size of volume in gb",
+				MarkdownDescription: "Size of volume in GB",
 				Required:            true,
 				Type:                types.Int64Type,
 			},

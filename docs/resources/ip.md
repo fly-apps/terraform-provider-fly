@@ -29,12 +29,12 @@ resource "fly_ip" "exampleIpv6" {
 
 ### Required
 
-- `app` (String) Name of app to attach
+- `app` (String) Name of app to attach to
 - `type` (String) v4 or v6
 
 ### Read-Only
 
-- `address` (String) ID of volume
+- `address` (String) IP address
 - `id` (String) ID of address
 - `region` (String) region
 
