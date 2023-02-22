@@ -131,9 +131,10 @@ func (p *provider) GetResources(ctx context.Context) (map[string]tfsdkprovider.R
 
 func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdkprovider.DataSourceType, diag.Diagnostics) {
 	return map[string]tfsdkprovider.DataSourceType{
-		"fly_app":  appDataSourceType{},
-		"fly_cert": certDataSourceType{},
-		"fly_ip":   ipDataSourceType{},
+		"fly_app":    appDataSourceType{},
+		"fly_cert":   certDataSourceType{},
+		"fly_ip":     ipDataSourceType{},
+		"fly_volume": volumeDataSourceType{},
 	}, nil
 }
 
