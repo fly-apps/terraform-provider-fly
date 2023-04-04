@@ -35,4 +35,10 @@ resource "fly_app" "exampleApp" {
 - `id` (String) readonly app id
 - `orgid` (String) readonly orgid
 
+## Import
 
+Import is supported using the following syntax:
+
+```shell
+terraform import fly_app.exampleApp <app_id>
+```
