@@ -214,11 +214,13 @@ func (v *CreateAppMutationCreateAppCreateAppPayload) GetApp() CreateAppMutationC
 
 // CreateAppMutationCreateAppCreateAppPayloadApp includes the requested fields of the GraphQL type App.
 type CreateAppMutationCreateAppCreateAppPayloadApp struct {
-	Id           string                                                    `json:"id"`
-	Name         string                                                    `json:"name"`
-	Status       string                                                    `json:"status"`
-	Organization CreateAppMutationCreateAppCreateAppPayloadAppOrganization `json:"organization"`
-	AppUrl       string                                                    `json:"appUrl"`
+	Id              string                                                    `json:"id"`
+	Name            string                                                    `json:"name"`
+	Status          string                                                    `json:"status"`
+	Organization    CreateAppMutationCreateAppCreateAppPayloadAppOrganization `json:"organization"`
+	AppUrl          string                                                    `json:"appUrl"`
+	Hostname        string                                                    `json:"hostname"`
+	SharedIpAddress string                                                    `json:"sharedIpAddress"`
 }
 
 // GetId returns CreateAppMutationCreateAppCreateAppPayloadApp.Id, and is useful for accessing the field via an interface.
@@ -237,6 +239,14 @@ func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetOrganization() Create
 
 // GetAppUrl returns CreateAppMutationCreateAppCreateAppPayloadApp.AppUrl, and is useful for accessing the field via an interface.
 func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetAppUrl() string { return v.AppUrl }
+
+// GetHostname returns CreateAppMutationCreateAppCreateAppPayloadApp.Hostname, and is useful for accessing the field via an interface.
+func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetHostname() string { return v.Hostname }
+
+// GetSharedIpAddress returns CreateAppMutationCreateAppCreateAppPayloadApp.SharedIpAddress, and is useful for accessing the field via an interface.
+func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetSharedIpAddress() string {
+	return v.SharedIpAddress
+}
 
 // CreateAppMutationCreateAppCreateAppPayloadAppOrganization includes the requested fields of the GraphQL type Organization.
 type CreateAppMutationCreateAppCreateAppPayloadAppOrganization struct {
@@ -498,20 +508,21 @@ func (v *GetCertificateResponse) GetApp() GetCertificateApp { return v.App }
 
 // GetFullAppApp includes the requested fields of the GraphQL type App.
 type GetFullAppApp struct {
-	Name           string                                        `json:"name"`
-	Network        string                                        `json:"network"`
-	Organization   GetFullAppAppOrganization                     `json:"organization"`
-	Autoscaling    GetFullAppAppAutoscalingAutoscalingConfig     `json:"autoscaling"`
-	AppUrl         string                                        `json:"appUrl"`
-	Hostname       string                                        `json:"hostname"`
-	Id             string                                        `json:"id"`
-	Status         string                                        `json:"status"`
-	Deployed       bool                                          `json:"deployed"`
-	CurrentRelease GetFullAppAppCurrentRelease                   `json:"currentRelease"`
-	Config         GetFullAppAppConfig                           `json:"config"`
-	HealthChecks   GetFullAppAppHealthChecksCheckStateConnection `json:"healthChecks"`
-	IpAddresses    GetFullAppAppIpAddressesIPAddressConnection   `json:"ipAddresses"`
-	Role           GetFullAppAppRole                             `json:"-"`
+	Name            string                                        `json:"name"`
+	Network         string                                        `json:"network"`
+	Organization    GetFullAppAppOrganization                     `json:"organization"`
+	Autoscaling     GetFullAppAppAutoscalingAutoscalingConfig     `json:"autoscaling"`
+	AppUrl          string                                        `json:"appUrl"`
+	Hostname        string                                        `json:"hostname"`
+	SharedIpAddress string                                        `json:"sharedIpAddress"`
+	Id              string                                        `json:"id"`
+	Status          string                                        `json:"status"`
+	Deployed        bool                                          `json:"deployed"`
+	CurrentRelease  GetFullAppAppCurrentRelease                   `json:"currentRelease"`
+	Config          GetFullAppAppConfig                           `json:"config"`
+	HealthChecks    GetFullAppAppHealthChecksCheckStateConnection `json:"healthChecks"`
+	IpAddresses     GetFullAppAppIpAddressesIPAddressConnection   `json:"ipAddresses"`
+	Role            GetFullAppAppRole                             `json:"-"`
 }
 
 // GetName returns GetFullAppApp.Name, and is useful for accessing the field via an interface.
@@ -533,6 +544,9 @@ func (v *GetFullAppApp) GetAppUrl() string { return v.AppUrl }
 
 // GetHostname returns GetFullAppApp.Hostname, and is useful for accessing the field via an interface.
 func (v *GetFullAppApp) GetHostname() string { return v.Hostname }
+
+// GetSharedIpAddress returns GetFullAppApp.SharedIpAddress, and is useful for accessing the field via an interface.
+func (v *GetFullAppApp) GetSharedIpAddress() string { return v.SharedIpAddress }
 
 // GetId returns GetFullAppApp.Id, and is useful for accessing the field via an interface.
 func (v *GetFullAppApp) GetId() string { return v.Id }
@@ -608,6 +622,8 @@ type __premarshalGetFullAppApp struct {
 
 	Hostname string `json:"hostname"`
 
+	SharedIpAddress string `json:"sharedIpAddress"`
+
 	Id string `json:"id"`
 
 	Status string `json:"status"`
@@ -642,6 +658,7 @@ func (v *GetFullAppApp) __premarshalJSON() (*__premarshalGetFullAppApp, error) {
 	retval.Autoscaling = v.Autoscaling
 	retval.AppUrl = v.AppUrl
 	retval.Hostname = v.Hostname
+	retval.SharedIpAddress = v.SharedIpAddress
 	retval.Id = v.Id
 	retval.Status = v.Status
 	retval.Deployed = v.Deployed
@@ -1611,6 +1628,8 @@ mutation CreateAppMutation ($name: String, $organizationId: ID!) {
 				slug
 			}
 			appUrl
+			hostname
+			sharedIpAddress
 		}
 	}
 }
@@ -1900,6 +1919,7 @@ query GetFullApp ($name: String) {
 		}
 		appUrl
 		hostname
+		sharedIpAddress
 		id
 		status
 		deployed

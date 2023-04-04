@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/fly-apps/terraform-provider-fly/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -23,11 +24,13 @@ var _ resource.ResourceWithImportState = flyAppResource{}
 type flyAppResourceType struct{}
 
 type flyAppResourceData struct {
-	Name   types.String `tfsdk:"name"`
-	Org    types.String `tfsdk:"org"`
-	OrgId  types.String `tfsdk:"orgid"`
-	AppUrl types.String `tfsdk:"appurl"`
-	Id     types.String `tfsdk:"id"`
+	Id              types.String `tfsdk:"id"`
+	Name            types.String `tfsdk:"name"`
+	Org             types.String `tfsdk:"org"`
+	OrgId           types.String `tfsdk:"orgid"`
+	AppUrl          types.String `tfsdk:"appurl"`
+	Hostname        types.String `tfsdk:"hostname"`
+	SharedIpAddress types.String `tfsdk:"sharedipaddress"`
 	//Secrets types.Map    `tfsdk:"secrets"`
 }
 
@@ -61,6 +64,16 @@ func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diag
 			"appurl": {
 				Computed:            true,
 				MarkdownDescription: "readonly appUrl",
+				Type:                types.StringType,
+			},
+			"hostname": {
+				Computed:            true,
+				MarkdownDescription: "readonly hostname",
+				Type:                types.StringType,
+			},
+			"sharedipaddress": {
+				Computed:            true,
+				MarkdownDescription: "readonly sharedIpAddress",
 				Type:                types.StringType,
 			},
 			//"secrets": {
@@ -118,11 +131,13 @@ func (r flyAppResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	data = flyAppResourceData{
-		Org:    types.String{Value: mresp.CreateApp.App.Organization.Slug},
-		OrgId:  types.String{Value: mresp.CreateApp.App.Organization.Id},
-		Name:   types.String{Value: mresp.CreateApp.App.Name},
-		AppUrl: types.String{Value: mresp.CreateApp.App.AppUrl},
-		Id:     types.String{Value: mresp.CreateApp.App.Id},
+		Id:              types.String{Value: mresp.CreateApp.App.Id},
+		Org:             types.String{Value: mresp.CreateApp.App.Organization.Slug},
+		OrgId:           types.String{Value: mresp.CreateApp.App.Organization.Id},
+		Name:            types.String{Value: mresp.CreateApp.App.Name},
+		AppUrl:          types.String{Value: mresp.CreateApp.App.AppUrl},
+		Hostname:        types.String{Value: mresp.CreateApp.App.Hostname},
+		SharedIpAddress: types.String{Value: mresp.CreateApp.App.SharedIpAddress},
 	}
 
 	//if len(data.Secrets.Elems) > 0 {
@@ -178,11 +193,13 @@ func (r flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	data := flyAppResourceData{
-		Name:   types.String{Value: query.App.Name},
-		Org:    types.String{Value: query.App.Organization.Slug},
-		OrgId:  types.String{Value: query.App.Organization.Id},
-		AppUrl: types.String{Value: query.App.AppUrl},
-		Id:     types.String{Value: query.App.Id},
+		Id:              types.String{Value: query.App.Id},
+		Name:            types.String{Value: query.App.Name},
+		Org:             types.String{Value: query.App.Organization.Slug},
+		OrgId:           types.String{Value: query.App.Organization.Id},
+		AppUrl:          types.String{Value: query.App.AppUrl},
+		Hostname:        types.String{Value: query.App.Hostname},
+		SharedIpAddress: types.String{Value: query.App.SharedIpAddress},
 	}
 
 	//if !state.Secrets.Null && !state.Secrets.Unknown {
