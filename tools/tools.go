@@ -3,12 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Khan/genqlient/graphql"
 	"net/http"
 	"os"
-
-	"github.com/fly-apps/terraform-provider-fly/internal/wg"
 	"time"
+
+	"github.com/Khan/genqlient/graphql"
+	"github.com/fly-apps/terraform-provider-fly/internal/wg"
+
+	// Ensure documentation generator is not removed from go.mod.
+	_ "github.com/Khan/genqlient/generate"
+	_ "github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs"
 )
 
 type transport struct {
