@@ -115,4 +115,10 @@ Optional:
 
 - `handlers` (List of String) How the edge should process requests
 
+## Import
 
+Import is supported using the following syntax:
+
+```shell
+terraform import fly_machine.exampleMachine <app_id>,<machine_id>
+```
