@@ -67,7 +67,7 @@ resource "fly_machine" "exampleMachine" {
 
 - `cmd` (List of String) cmd
 - `cpus` (Number) cpu count
-- `cputype` (String) cpu type
+- `cputype` (String) cpu type: one of "shared" or "performance"
 - `entrypoint` (List of String) image entrypoint
 - `env` (Map of String) Optional environment variables, keys and values must be strings
 - `exec` (List of String) exec command
