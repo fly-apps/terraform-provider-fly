@@ -15,7 +15,7 @@ description: |-
 ```terraform
 provider "fly" {
   # Please don't do this. Use the FLY_API_TOKEN env variable instead.
-  fly_api_token = "abc123"
+  flytoken = "abc123"
 }
 ```
 
