@@ -26,10 +26,10 @@ resource "fly_volume" "exampleApp" {
 
 ### Required
 
-- `app` (String) Name of app to attach
+- `app` (String) Name of app to attach to
 - `name` (String) name
 - `region` (String) region
-- `size` (Number) Size of volume in gb
+- `size` (Number) Size of volume in GB
 
 ### Optional
 
