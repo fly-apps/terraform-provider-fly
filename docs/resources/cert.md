@@ -35,4 +35,10 @@ resource "fly_cert" "exampleCert" {
 - `dnsvalidationtarget` (String) DnsValidationTarget
 - `id` (String) ID of address
 
+## Import
 
+Import is supported using the following syntax:
+
+```shell
+terraform import fly_cert.exampleCert <app_id>,<hostname>
+```

@@ -36,4 +36,10 @@ resource "fly_volume" "exampleApp" {
 - `id` (String) ID of volume
 - `internalid` (String) Internal ID
 
+## Import
 
+Import is supported using the following syntax:
+
+```shell
+terraform import fly_volume.exampleApp <app_id>,<volume_internal_id>
+```
