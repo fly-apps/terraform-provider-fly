@@ -36,12 +36,12 @@ func (i ipDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 		MarkdownDescription: "Fly ip data source",
 		Attributes: map[string]tfsdk.Attribute{
 			"address": {
-				MarkdownDescription: "ID of volume",
+				MarkdownDescription: "IP address",
 				Type:                types.StringType,
 				Computed:            true,
 			},
 			"app": {
-				MarkdownDescription: "Name of app to attach",
+				MarkdownDescription: "Name of app attached to",
 				Required:            true,
 				Type:                types.StringType,
 			},

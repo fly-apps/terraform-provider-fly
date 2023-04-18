@@ -41,12 +41,12 @@ func (t flyIpResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagno
 		MarkdownDescription: "Fly ip resource",
 		Attributes: map[string]tfsdk.Attribute{
 			"address": {
-				MarkdownDescription: "ID of volume",
+				MarkdownDescription: "IP address",
 				Type:                types.StringType,
 				Computed:            true,
 			},
 			"app": {
-				MarkdownDescription: "Name of app to attach",
+				MarkdownDescription: "Name of app to attach to",
 				Required:            true,
 				Type:                types.StringType,
 			},

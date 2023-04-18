@@ -37,12 +37,12 @@ func (v volumeDataSourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Dia
 				Optional:            true,
 			},
 			"app": {
-				MarkdownDescription: "Name of app to attach",
+				MarkdownDescription: "Name of app attached to",
 				Required:            true,
 				Type:                types.StringType,
 			},
 			"size": {
-				MarkdownDescription: "Size of volume in gb",
+				MarkdownDescription: "Size of volume in GB",
 				Required:            true,
 				Type:                types.Int64Type,
 			},
