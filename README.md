@@ -28,11 +28,12 @@ To run acceptance tests for this provider some scaffolding is required.
 2. Export environment variables
     * `export FLY_TF_TEST_ORG=<your-org-slug-from-step-1>`
     * `export FLY_TF_TEST_APP="acctestapp-$(head /dev/urandom | LC_ALL=C tr -dc A-Za-z0-9 | head -c 10)"`
-2. Run the commands below to persist your config values. You will need direnv installed.
+3. Run the commands below to persist your config values. You will need direnv installed.
     * `$(cd infra && echo "fly_ci_org = \"${FLY_TF_TEST_ORG}\"\nfly_ci_app = \"${FLY_TF_TEST_APP}\"" > terraform.tfvars) && echo "export ASDF_DEFAULT_TOOL_VERSIONS_FILENAME=\$(pwd)/.tool-versions\nexport FLY_TF_TEST_ORG=${FLY_TF_TEST_ORG}\nexport FLY_TF_TEST_APP=${FLY_TF_TEST_APP}" > .envrc`
     * You should receive a direnv warning because .`envrc` changed and has new unapproved content. Run `direnv allow`.
-3. Got to the infra directory and run `terraform apply` to create the scaffolding.
-4. You should now be able to run `make` in the repo root to run tests.
+4. Got to the infra directory and run `terraform apply` to create the scaffolding.
+5. You should now be able to run `make` in the repo root to run tests.
+6. (Optional) set FLY_TF_TEST_REGION in .envrc to a region closer to you
 
 
 ### TODO
