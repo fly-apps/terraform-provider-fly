@@ -1,7 +1,7 @@
 package provider
 
 import (
-    "fmt"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"os"
@@ -22,13 +22,15 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 
 func providerConfig() string {
 	org := os.Getenv("FLY_TF_TEST_ORG")
-    return fmt.Sprintf(providerConfigTemplate, org, regionConfig())
+	return fmt.Sprintf(providerConfigTemplate, org, regionConfig())
 }
 
 func regionConfig() string {
-    region := os.Getenv("FLY_TF_TEST_REGION")
-    if len(region) < 1 { region = "ewr" }
-    return region
+	region := os.Getenv("FLY_TF_TEST_REGION")
+	if len(region) < 1 {
+		region = "ewr"
+	}
+	return region
 }
 
 func testAccPreCheck(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-	var app = os.Getenv("FLY_TF_TEST_APP")
-	var region = regionConfig()
+var app = os.Getenv("FLY_TF_TEST_APP")
+var region = regionConfig()
 
 func TestAccFlyMachineBase(t *testing.T) {
 	t.Parallel()
