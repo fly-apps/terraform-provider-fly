@@ -39,6 +39,7 @@ website/vendor
 .direnv
 .envrc
 terraform-provider-fly
+infra/terraform.tfvars
 
 examples/local/
 tmp/

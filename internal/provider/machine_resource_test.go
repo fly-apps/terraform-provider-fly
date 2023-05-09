@@ -28,12 +28,13 @@ func TestAccFlyMachineBase(t *testing.T) {
 }
 
 func testFlyMachineResourceConfig(name string) string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -62,16 +63,17 @@ resource "fly_machine" "testMachine" {
       }
     ]
 }
-`, app, name)
+`, org, app, name)
 }
 
 func testFlyMachineResourceUpdateConfig(name string) string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -100,7 +102,7 @@ resource "fly_machine" "testMachine" {
       }
     ]
 }
-`, app, name)
+`, org, app, name)
 }
 
 func TestAccFlyMachineNoServices(t *testing.T) {
@@ -119,12 +121,13 @@ func TestAccFlyMachineNoServices(t *testing.T) {
 }
 
 func testFlyMachineResourceNoServicesConfig(name string) string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -137,7 +140,7 @@ resource "fly_machine" "testMachine" {
 		updatedkey = "value"
     }
 }
-`, app, name)
+`, org, app, name)
 }
 
 func TestAccFlyMachineEmptyServices(t *testing.T) {
@@ -156,12 +159,13 @@ func TestAccFlyMachineEmptyServices(t *testing.T) {
 }
 
 func testFlyMachineResourceEmptyServicesConfig(name string) string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -175,7 +179,7 @@ resource "fly_machine" "testMachine" {
     }
     services = []
 }
-`, app, name)
+`, org, app, name)
 }
 
 func TestAccFlyMachineInitOptions(t *testing.T) {
@@ -199,12 +203,13 @@ func TestAccFlyMachineInitOptions(t *testing.T) {
 }
 
 func testFlyMachineResourceInitOptionsConfig(name string) string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -220,7 +225,7 @@ resource "fly_machine" "testMachine" {
     entrypoint = ["entrypointText"]
 	exec = ["execText"]
 }
-`, app, name)
+`, org, app, name)
 }
 
 func TestAccFlyMachineModifyImage(t *testing.T) {
@@ -241,12 +246,13 @@ func TestAccFlyMachineModifyImage(t *testing.T) {
 }
 
 func testFlyMachineResourceChangeImageConfig(name string) string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -275,7 +281,7 @@ resource "fly_machine" "testMachine" {
       }
     ]
 }
-`, app, name)
+`, org, app, name)
 }
 
 func TestAccFlyMachineEmptyName(t *testing.T) {
@@ -295,12 +301,13 @@ func TestAccFlyMachineEmptyName(t *testing.T) {
 }
 
 func testFlyMachineResourceEmptyNameConfig() string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -328,16 +335,17 @@ resource "fly_machine" "testMachine" {
       }
     ]
 }
-`, app)
+`, org, app)
 }
 
 func testFlyMachineResourceEmptyNameUpdateConfig() string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
 	app := os.Getenv("FLY_TF_TEST_APP")
 
 	return fmt.Sprintf(`
 provider "fly" {
   useinternaltunnel    = true
-  internaltunnelorg    = "fly-terraform-ci"
+  internaltunnelorg    = "%s"
   internaltunnelregion = "ewr"
 }
 
@@ -365,5 +373,5 @@ resource "fly_machine" "testMachine" {
       }
     ]
 }
-`, app)
+`, org, app)
 }
