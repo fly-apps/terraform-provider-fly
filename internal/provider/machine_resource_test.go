@@ -8,6 +8,9 @@ import (
 	"testing"
 )
 
+	var app = os.Getenv("FLY_TF_TEST_APP")
+	var region = regionConfig()
+
 func TestAccFlyMachineBase(t *testing.T) {
 	t.Parallel()
 	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
@@ -28,81 +31,63 @@ func TestAccFlyMachineBase(t *testing.T) {
 }
 
 func testFlyMachineResourceConfig(name string) string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
-
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-	name = "%s"
-    image = "nginx"
-	env = {
-		updatedkey = "value"
+  app    = "%s"
+  region = "%s"
+  name   = "%s"
+  image  = "nginx"
+  env = {
+    updatedkey = "value"
+  }
+  services = [
+    {
+      ports = [
+        {
+          port     = 443
+          handlers = ["tls", "http"]
+        },
+        {
+          port     = 80
+          handlers = ["http"]
+        }
+      ]
+      "protocol" : "tcp",
+      "internal_port" : 80
     }
-    services = [
-      {
-        ports = [
-          {
-            port     = 443
-            handlers = ["tls", "http"]
-          },
-          {
-            port     = 80
-            handlers = ["http"]
-          }
-        ]
-        "protocol" : "tcp",
-        "internal_port" : 80
-      }
-    ]
+  ]
 }
-`, org, app, name)
+`, app, region, name)
 }
 
 func testFlyMachineResourceUpdateConfig(name string) string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
-
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-	name = "%s"
-    image = "nginx"
-	env = {
-		updatedkey = "updatedValue"
+  app    = "%s"
+  region = "%s"
+  name   = "%s"
+  image  = "nginx"
+  env = {
+    updatedkey = "updatedValue"
+  }
+  services = [
+    {
+      ports = [
+        {
+          port     = 443
+          handlers = ["tls", "http"]
+        },
+        {
+          port     = 80
+          handlers = ["http"]
+        }
+      ]
+      "protocol" : "tcp",
+      "internal_port" : 80
     }
-    services = [
-      {
-        ports = [
-          {
-            port     = 443
-            handlers = ["tls", "http"]
-          },
-          {
-            port     = 80
-            handlers = ["http"]
-          }
-        ]
-        "protocol" : "tcp",
-        "internal_port" : 80
-      }
-    ]
+  ]
 }
-`, org, app, name)
+`, app, region, name)
 }
 
 func TestAccFlyMachineNoServices(t *testing.T) {
@@ -121,26 +106,17 @@ func TestAccFlyMachineNoServices(t *testing.T) {
 }
 
 func testFlyMachineResourceNoServicesConfig(name string) string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
-
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-	name = "%s"
-    image = "nginx"
-	env = {
-		updatedkey = "value"
-    }
+  app    = "%s"
+  region = "%s"
+  name   = "%s"
+  image  = "nginx"
+  env = {
+    updatedkey = "value"
+  }
 }
-`, org, app, name)
+`, app, region, name)
 }
 
 func TestAccFlyMachineEmptyServices(t *testing.T) {
@@ -159,27 +135,18 @@ func TestAccFlyMachineEmptyServices(t *testing.T) {
 }
 
 func testFlyMachineResourceEmptyServicesConfig(name string) string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
-
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-	name = "%s"
-    image = "nginx"
-	env = {
-		updatedkey = "value"
-    }
-    services = []
+  app    = "%s"
+  region = "%s"
+  name   = "%s"
+  image  = "nginx"
+  env = {
+    updatedkey = "value"
+  }
+  services = []
 }
-`, org, app, name)
+`, app, region, name)
 }
 
 func TestAccFlyMachineInitOptions(t *testing.T) {
@@ -203,29 +170,20 @@ func TestAccFlyMachineInitOptions(t *testing.T) {
 }
 
 func testFlyMachineResourceInitOptionsConfig(name string) string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
-
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-	name = "%s"
-    image = "nginx"
-	env = {
-		updatedkey = "value"
-    }
-    cmd = ["cmdText"]
-    entrypoint = ["entrypointText"]
-	exec = ["execText"]
+  app    = "%s"
+  region = "%s"
+  name   = "%s"
+  image  = "nginx"
+  env = {
+    updatedkey = "value"
+  }
+  cmd        = ["cmdText"]
+  entrypoint = ["entrypointText"]
+  exec       = ["execText"]
 }
-`, org, app, name)
+`, app, region, name)
 }
 
 func TestAccFlyMachineModifyImage(t *testing.T) {
@@ -246,42 +204,35 @@ func TestAccFlyMachineModifyImage(t *testing.T) {
 }
 
 func testFlyMachineResourceChangeImageConfig(name string) string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
 
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-	name = "%s"
-    image = "nginx:latest"
-	env = {
-		updatedkey = "value"
+  app    = "%s"
+  region = "%s"
+  name   = "%s"
+  image  = "nginx:latest"
+  env = {
+    updatedkey = "value"
+  }
+  services = [
+    {
+      ports = [
+        {
+          port     = 443
+          handlers = ["tls", "http"]
+        },
+        {
+          port     = 80
+          handlers = ["http"]
+        }
+      ]
+      "protocol" : "tcp",
+      "internal_port" : 80
     }
-    services = [
-      {
-        ports = [
-          {
-            port     = 443
-            handlers = ["tls", "http"]
-          },
-          {
-            port     = 80
-            handlers = ["http"]
-          }
-        ]
-        "protocol" : "tcp",
-        "internal_port" : 80
-      }
-    ]
+  ]
 }
-`, org, app, name)
+
+`, app, region, name)
 }
 
 func TestAccFlyMachineEmptyName(t *testing.T) {
@@ -301,77 +252,60 @@ func TestAccFlyMachineEmptyName(t *testing.T) {
 }
 
 func testFlyMachineResourceEmptyNameConfig() string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
-
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-    image = "nginx"
-	env = {
-		updatedkey = "value"
+  app    = "%s"
+  region = "%s"
+  image  = "nginx"
+  env = {
+    updatedkey = "value"
+  }
+  services = [
+    {
+      ports = [
+        {
+          port     = 443
+          handlers = ["tls", "http"]
+        },
+        {
+          port     = 80
+          handlers = ["http"]
+        }
+      ]
+      "protocol" : "tcp",
+      "internal_port" : 80
     }
-    services = [
-      {
-        ports = [
-          {
-            port     = 443
-            handlers = ["tls", "http"]
-          },
-          {
-            port     = 80
-            handlers = ["http"]
-          }
-        ]
-        "protocol" : "tcp",
-        "internal_port" : 80
-      }
-    ]
+  ]
 }
-`, org, app)
+
+`, app, region)
 }
 
 func testFlyMachineResourceEmptyNameUpdateConfig() string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	app := os.Getenv("FLY_TF_TEST_APP")
-
-	return fmt.Sprintf(`
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "ewr"
-}
-
+	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
-	app = "%s"
-	region = "ewr"
-	image = "nginx:latest"
-	env = {
-		updatedkey = "value"
+  app    = "%s"
+  region = "%s"
+  image  = "nginx:latest"
+  env = {
+    updatedkey = "value"
+  }
+  services = [
+    {
+      ports = [
+        {
+          port     = 443
+          handlers = ["tls", "http"]
+        },
+        {
+          port     = 80
+          handlers = ["http"]
+        }
+      ]
+      "protocol" : "tcp",
+      "internal_port" : 80
     }
-    services = [
-      {
-        ports = [
-          {
-            port     = 443
-            handlers = ["tls", "http"]
-          },
-          {
-            port     = 80
-            handlers = ["http"]
-          }
-        ]
-        "protocol" : "tcp",
-        "internal_port" : 80
-      }
-    ]
+  ]
 }
-`, org, app)
+`, app, region)
 }
