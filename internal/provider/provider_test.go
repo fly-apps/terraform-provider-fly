@@ -1,14 +1,36 @@
 package provider
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"os"
 	"testing"
 )
 
+const providerConfigTemplate = `
+provider "fly" {
+  useinternaltunnel    = true
+  internaltunnelorg    = "%s"
+  internaltunnelregion = "%s"
+}
+`
+
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"fly": providerserver.NewProtocol6WithError(New("test")()),
+}
+
+func providerConfig() string {
+	org := os.Getenv("FLY_TF_TEST_ORG")
+	return fmt.Sprintf(providerConfigTemplate, org, regionConfig())
+}
+
+func regionConfig() string {
+	region := os.Getenv("FLY_TF_TEST_REGION")
+	if len(region) < 1 {
+		region = "ewr"
+	}
+	return region
 }
 
 func testAccPreCheck(t *testing.T) {
@@ -19,5 +41,9 @@ func testAccPreCheck(t *testing.T) {
 	_, hasApp := os.LookupEnv("FLY_TF_TEST_APP")
 	if !hasApp {
 		t.Fatalf("Need app in FLY_TF_TEST_APP")
+	}
+	_, hasOrg := os.LookupEnv("FLY_TF_TEST_ORG")
+	if !hasOrg {
+		t.Fatalf("Need org slug in FLY_TF_TEST_ORG")
 	}
 }
