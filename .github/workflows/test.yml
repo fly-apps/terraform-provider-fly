@@ -53,15 +53,12 @@ jobs:
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
-#      - uses: superfly/flyctl-actions/setup-flyctl@master
-#      - run: flyctl proxy 4280:4280 _api.internal -o fly-terraform-ci -a acctestapp &
-#        env:
-#          FLY_API_TOKEN: ${{ secrets.FLY_AUTH_TOKEN_CI }}
       - uses: actions/checkout@v3
       - run: go mod download
       - env:
           TF_ACC: "1"
           FLY_TF_TEST_APP: acctestapp
+          FLY_TF_TEST_ORG: fly-terraform-ci
           FLY_API_TOKEN: ${{ secrets.FLY_AUTH_TOKEN_CI }}
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10
