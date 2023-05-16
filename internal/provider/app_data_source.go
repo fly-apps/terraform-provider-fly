@@ -3,22 +3,37 @@ package provider
 import (
 	"context"
 
+	basegql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdkprovider.DataSourceType = appDataSourceType{}
-var _ datasource.DataSource = appDataSource{}
+var _ datasource.DataSource = &appDataSourceType{}
 
-type appDataSourceType struct{}
+func NewAppDataSource() datasource.DataSource {
+    return &appDataSourceType{}
+}
 
-// Matches getSchema
+type appDataSourceType struct{
+    client *basegql.Client
+}
+
+func (d *appDataSourceType) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+    resp.TypeName = "fly_app"
+}
+
+func (d *appDataSourceType) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+    if req.ProviderData == nil {
+        return
+    }
+
+    d.client = req.ProviderData.(*basegql.Client)
+    // Maybe wrapping the client in the tunneled client should be done here?
+}
+ 
 type appDataSourceOutput struct {
 	Name           types.String `tfsdk:"name"`
 	AppUrl         types.String `tfsdk:"appurl"`
@@ -32,61 +47,46 @@ type appDataSourceOutput struct {
 	//Secrets        types.Map    `tfsdk:"secrets"`
 }
 
-func (a appDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (d *appDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+    resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieve info about graphql app",
 
-		Attributes: map[string]tfsdk.Attribute{
-			"name": {
+		Attributes: map[string]schema.Attribute{
+			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of app",
-				Type:                types.StringType,
 				Required:            true,
 			},
-			"appurl": {
-				Type:     types.StringType,
+			"appurl": schema.StringAttribute{
 				Computed: true,
 			},
-			"hostname": {
-				Type:     types.StringType,
+			"hostname": schema.StringAttribute{
 				Computed: true,
 			},
-			"id": {
-				Type:     types.StringType,
+			"id": schema.StringAttribute{
 				Computed: true,
 			},
-			"status": {
-				Type:     types.StringType,
+			"status": schema.StringAttribute{
 				Computed: true,
 			},
-			"deployed": {
-				Type:     types.BoolType,
+			"deployed": schema.BoolAttribute{
 				Computed: true,
 			},
-			"healthchecks": {
+			"healthchecks": schema.ListAttribute{
 				Computed: true,
-				Type:     types.ListType{ElemType: types.StringType},
+                ElementType: types.StringType,
 			},
-			"ipaddresses": {
+			"ipaddresses": schema.ListAttribute{
 				Computed: true,
-				Type:     types.ListType{ElemType: types.StringType},
+                ElementType: types.StringType,
 			},
-			"currentrelease": {
-				Type:     types.StringType,
+			"currentrelease": schema.StringAttribute{
 				Computed: true,
 			},
 		},
-	}, nil
+    }
 }
 
-func (a appDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return appDataSource{
-		provider: provider,
-	}, diags
-}
-
-func (d appDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *appDataSourceType) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data appDataSourceOutput
 
 	diags := req.Config.Get(ctx, &data)
@@ -96,23 +96,23 @@ func (d appDataSource) Read(ctx context.Context, req datasource.ReadRequest, res
 		return
 	}
 
-	appName := data.Name.Value
+	appName := data.Name.ValueString()
 
-	queryresp, err := graphql.GetFullApp(context.Background(), *d.provider.client, appName)
+	queryresp, err := graphql.GetFullApp(context.Background(), *d.client, appName)
 	if err != nil {
 		resp.Diagnostics.AddError("Query failed", err.Error())
 	}
 
 	a := appDataSourceOutput{
-		Name:           types.String{Value: appName},
-		AppUrl:         types.String{Value: string(queryresp.App.AppUrl)},
-		Hostname:       types.String{Value: string(queryresp.App.Hostname)},
-		Id:             types.String{Value: string(queryresp.App.Id)},
-		Status:         types.String{Value: string(queryresp.App.Status)},
-		Deployed:       types.Bool{Value: queryresp.App.Deployed},
-		Currentrelease: types.String{Value: queryresp.App.CurrentRelease.Id},
-		Healthchecks:   []string{},
-		Ipaddresses:    []string{},
+		Name:           types.StringValue(appName),
+		AppUrl:         types.StringValue(queryresp.App.AppUrl),
+		Hostname:       types.StringValue(queryresp.App.Hostname),
+		Id:             types.StringValue(queryresp.App.Id),
+		Status:         types.StringValue(queryresp.App.Status),
+		Deployed:       types.BoolValue(queryresp.App.Deployed),
+		Currentrelease: types.StringValue(queryresp.App.CurrentRelease.Id),
+		// Healthchecks:   []string{},
+		// Ipaddresses:    []string{},
 	}
 
 	for _, s := range queryresp.App.HealthChecks.Nodes {
