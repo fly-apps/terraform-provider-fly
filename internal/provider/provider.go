@@ -123,8 +123,8 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		p.httpEndpoint = "_api.internal:4280"
 	}
 	p.configured = true
-    resp.DataSourceData = client
-    resp.ResourceData = client
+    resp.DataSourceData = p.client
+    resp.ResourceData = p.client
 }
 
 func (p *flyProvider) Resources(ctx context.Context) []func() resource.Resource {
