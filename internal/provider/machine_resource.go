@@ -348,7 +348,10 @@ func (mr flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", newMachine))
 
-	env := utils.KVToTfMap(newMachine.Config.Env, types.StringType)
+	// env := utils.KVToTfMap(newMachine.Config.Env, types.StringType)
+    env, diags := types.MapValueFrom(ctx, types.StringType, newMachine.Config.Env)
+    resp.Diagnostics.Append(diags...)
+
 
 	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
@@ -420,7 +423,9 @@ func (mr flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	env := utils.KVToTfMap(machine.Config.Env, types.StringType)
+	// env := utils.KVToTfMap(machine.Config.Env, types.StringType)
+    env, diags := types.MapValueFrom(ctx, types.StringType, machine.Config.Env)
+    resp.Diagnostics.Append(diags...)
 
 	tfservices := ServicesToTfServices(machine.Config.Services)
 
@@ -556,7 +561,9 @@ func (mr flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	env := utils.KVToTfMap(updatedMachine.Config.Env, types.StringType)
+	// env := utils.KVToTfMap(updatedMachine.Config.Env, types.StringType)
+    env, diags := types.MapValueFrom(ctx, types.StringType, updatedMachine.Config.Env)
+    resp.Diagnostics.Append(diags...)
 
 	tfservices := ServicesToTfServices(updatedMachine.Config.Services)
 
