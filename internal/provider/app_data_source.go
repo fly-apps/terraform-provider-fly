@@ -32,6 +32,7 @@ func (d *appDataSourceType) Configure(_ context.Context, req datasource.Configur
 
     d.client = req.ProviderData.(*basegql.Client)
     // Maybe wrapping the client in the tunneled client should be done here?
+    // or even in the provider itself?
 }
  
 type appDataSourceOutput struct {
