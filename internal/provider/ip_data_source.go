@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
-	"github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
+	// "github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -59,9 +59,10 @@ func (i ipDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 				MarkdownDescription: "region",
 				Type:                types.StringType,
 				Computed:            true,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					modifiers.StringDefault("global"),
-				},
+                // MUSTDO: reimplement the default value of "global" here.
+				// PlanModifiers: tfsdk.AttributePlanModifiers{
+					// modifiers.StringDefault("global"),
+				// },
 			},
 		},
 	}, nil

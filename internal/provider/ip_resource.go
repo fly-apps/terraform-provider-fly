@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/fly-apps/terraform-provider-fly/graphql"
-	"github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
+	// "github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
@@ -64,9 +64,10 @@ func (t flyIpResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagno
 				MarkdownDescription: "region",
 				Type:                types.StringType,
 				Computed:            true,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					modifiers.StringDefault("global"),
-				},
+                // MUSTDO: Reimplement default
+				// PlanModifiers: tfsdk.AttributePlanModifiers{
+					// modifiers.StringDefault("global"),
+				// },
 			},
 		},
 	}, nil
