@@ -143,7 +143,7 @@ func (p *flyProvider) DataSources(_ context.Context) []func() datasource.DataSou
         NewAppDataSource,  // fly_app
 		NewCertDataSource, // fly_cert
 		// "fly_ip":     ipDataSourceType{},
-		// "fly_volume": volumeDataSourceType{},
+		NewVolumeDataSource, // fly_volume
 	}
 }
 
