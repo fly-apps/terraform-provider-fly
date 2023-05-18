@@ -3,8 +3,8 @@ package provider
 import (
 	"context"
 	"errors"
-	"github.com/fly-apps/terraform-provider-fly/graphql"
 	basegql "github.com/Khan/genqlient/graphql"
+	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -15,13 +15,12 @@ import (
 var _ datasource.DataSource = &certDataSourceType{}
 var _ datasource.DataSourceWithConfigure = &certDataSourceType{}
 
-type certDataSourceType struct{
-    client *basegql.Client
+type certDataSourceType struct {
+	client *basegql.Client
 }
 
-
 func (d *certDataSourceType) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-    resp.TypeName = "fly_cert"
+	resp.TypeName = "fly_cert"
 }
 
 // Matches Schema
@@ -36,7 +35,7 @@ type certDataSourceOutput struct {
 }
 
 func (d *certDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-    resp.Schema = schema.Schema{
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly certificate data source",
 		Attributes: map[string]schema.Attribute{
 			"app": schema.StringAttribute{
@@ -72,17 +71,16 @@ func (d *certDataSourceType) Schema(_ context.Context, _ datasource.SchemaReques
 }
 
 func NewCertDataSource() datasource.DataSource {
-    return &certDataSourceType{}
+	return &certDataSourceType{}
 }
 
 func (d *certDataSourceType) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-    if req.ProviderData == nil {
-        return
-    }
+	if req.ProviderData == nil {
+		return
+	}
 
-    d.client = req.ProviderData.(*basegql.Client)
+	d.client = req.ProviderData.(*basegql.Client)
 }
-
 
 func (d *certDataSourceType) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data certDataSourceOutput

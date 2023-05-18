@@ -17,48 +17,48 @@ import (
 var _ datasource.DataSource = &volumeDataSourceType{}
 var _ datasource.DataSourceWithConfigure = &appDataSourceType{}
 
-type volumeDataSourceType struct{
-    client *basegql.Client
+type volumeDataSourceType struct {
+	client *basegql.Client
 }
 
 func NewVolumeDataSource() datasource.DataSource {
-    return &volumeDataSourceType{}
+	return &volumeDataSourceType{}
 }
 
 func (d *volumeDataSourceType) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-    resp.TypeName = "fly_volume"
+	resp.TypeName = "fly_volume"
 }
 
 func (d *volumeDataSourceType) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-    if req.ProviderData == nil {
-        return
-    }
+	if req.ProviderData == nil {
+		return
+	}
 
-    d.client = req.ProviderData.(*basegql.Client)
+	d.client = req.ProviderData.(*basegql.Client)
 }
 
 // Matches Schema
 type volumeDataSourceOutput struct {
-	Id         types.String `tfsdk:"id"`
-	Name       types.String `tfsdk:"name"`
-	Size       types.Int64  `tfsdk:"size"`
-	Appid      types.String `tfsdk:"app"`
-	Region     types.String `tfsdk:"region"`
+	Id     types.String `tfsdk:"id"`
+	Name   types.String `tfsdk:"name"`
+	Size   types.Int64  `tfsdk:"size"`
+	Appid  types.String `tfsdk:"app"`
+	Region types.String `tfsdk:"region"`
 }
 
 func (d *volumeDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-    resp.Schema = schema.Schema{
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly volume resource",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of volume",
 				Required:            true,
-                Validators: []validator.String{
-                    stringvalidator.RegexMatches(
-                        regexp.MustCompile(`^vol_[a-z0-9]+$`),
-                        "must start with \"vol_\"",
-                        ),
-                },
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^vol_[a-z0-9]+$`),
+						"must start with \"vol_\"",
+					),
+				},
 			},
 			"app": schema.StringAttribute{
 				MarkdownDescription: "Name of app attached to",
@@ -86,8 +86,8 @@ func (d *volumeDataSourceType) Read(ctx context.Context, req datasource.ReadRequ
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-    // strip leading vol_ off name
-    internalId := data.Id.ValueString()[4:]
+	// strip leading vol_ off name
+	internalId := data.Id.ValueString()[4:]
 	app := data.Appid.ValueString()
 
 	query, err := graphql.VolumeQuery(context.Background(), *d.client, app, internalId)
@@ -95,17 +95,17 @@ func (d *volumeDataSourceType) Read(ctx context.Context, req datasource.ReadRequ
 		resp.Diagnostics.AddError("Query failed", err.Error())
 	}
 
-    // this query will currently still return success if it finds nothing, so check it:
-    if query.App.Volume.Id == "" {
-        resp.Diagnostics.AddError("Query failed", "Could not find matching volume")
-    }
+	// this query will currently still return success if it finds nothing, so check it:
+	if query.App.Volume.Id == "" {
+		resp.Diagnostics.AddError("Query failed", "Could not find matching volume")
+	}
 
 	data = volumeDataSourceOutput{
-		Id:         types.StringValue(query.App.Volume.Id),
-		Name:       types.StringValue(query.App.Volume.Name),
-		Size:       types.Int64Value(int64(query.App.Volume.SizeGb)),
-		Appid:      data.Appid,
-		Region:     types.StringValue(query.App.Volume.Region),
+		Id:     types.StringValue(query.App.Volume.Id),
+		Name:   types.StringValue(query.App.Volume.Name),
+		Size:   types.Int64Value(int64(query.App.Volume.SizeGb)),
+		Appid:  data.Appid,
+		Region: types.StringValue(query.App.Volume.Region),
 	}
 
 	if resp.Diagnostics.HasError() {

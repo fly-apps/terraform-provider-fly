@@ -18,23 +18,23 @@ var _ datasource.DataSource = &ipDataSourceType{}
 var _ datasource.DataSourceWithConfigure = &ipDataSourceType{}
 
 func NewIpDataSource() datasource.DataSource {
-    return &ipDataSourceType{}
+	return &ipDataSourceType{}
 }
 
-type ipDataSourceType struct{
-    client *basegql.Client
+type ipDataSourceType struct {
+	client *basegql.Client
 }
 
 func (d *ipDataSourceType) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-    resp.TypeName = "fly_ip"
+	resp.TypeName = "fly_ip"
 }
 
 func (d *ipDataSourceType) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-    if req.ProviderData == nil {
-        return
-    }
+	if req.ProviderData == nil {
+		return
+	}
 
-    d.client = req.ProviderData.(*basegql.Client)
+	d.client = req.ProviderData.(*basegql.Client)
 }
 
 // Matches Schema
@@ -102,10 +102,10 @@ func (d *ipDataSourceType) Read(ctx context.Context, req datasource.ReadRequest,
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
 	}
 
-    region := query.App.IpAddress.Region
-    if (region == "") {
-        region = "global"
-    }
+	region := query.App.IpAddress.Region
+	if region == "" {
+		region = "global"
+	}
 
 	data = ipDataSourceOutput{
 		Id:      types.StringValue(query.App.IpAddress.Id),

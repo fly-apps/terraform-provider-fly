@@ -41,7 +41,7 @@ type flyProviderData struct {
 }
 
 func (p *flyProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-    resp.TypeName = "fly"
+	resp.TypeName = "fly"
 }
 
 func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
@@ -123,24 +123,24 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		p.httpEndpoint = "_api.internal:4280"
 	}
 	p.configured = true
-    resp.DataSourceData = p.client
-    resp.ResourceData = p.client
+	resp.DataSourceData = p.client
+	resp.ResourceData = p.client
 }
 
 func (p *flyProvider) Resources(ctx context.Context) []func() resource.Resource {
-    return []func() resource.Resource {
-// 		"fly_app":     flyAppResourceType{},
-// 		"fly_volume":  flyVolumeResourceType{},
-// 		"fly_ip":      flyIpResourceType{},
-// 		"fly_cert":    flyCertResourceType{},
-// 		"fly_machine": flyMachineResourceType{},
-// 	}
-    }
+	return []func() resource.Resource{
+		// 		"fly_app":     flyAppResourceType{},
+		// 		"fly_volume":  flyVolumeResourceType{},
+		// 		"fly_ip":      flyIpResourceType{},
+		// 		"fly_cert":    flyCertResourceType{},
+		// 		"fly_machine": flyMachineResourceType{},
+		// 	}
+	}
 }
 
 func (p *flyProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-    return []func() datasource.DataSource {
-        NewAppDataSource,    // fly_app
+	return []func() datasource.DataSource{
+		NewAppDataSource,    // fly_app
 		NewCertDataSource,   // fly_cert
 		NewIpDataSource,     // fly_ip
 		NewVolumeDataSource, // fly_volume
@@ -148,7 +148,7 @@ func (p *flyProvider) DataSources(_ context.Context) []func() datasource.DataSou
 }
 
 func (p *flyProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
-    resp.Schema = schema.Schema{
+	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"fly_api_token": schema.StringAttribute{
 				MarkdownDescription: "fly.io api token. If not set checks env for FLY_API_TOKEN",

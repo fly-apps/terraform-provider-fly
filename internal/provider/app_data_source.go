@@ -15,27 +15,27 @@ var _ datasource.DataSource = &appDataSourceType{}
 var _ datasource.DataSourceWithConfigure = &appDataSourceType{}
 
 func NewAppDataSource() datasource.DataSource {
-    return &appDataSourceType{}
+	return &appDataSourceType{}
 }
 
-type appDataSourceType struct{
-    client *basegql.Client
+type appDataSourceType struct {
+	client *basegql.Client
 }
 
 func (d *appDataSourceType) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-    resp.TypeName = "fly_app"
+	resp.TypeName = "fly_app"
 }
 
 func (d *appDataSourceType) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-    if req.ProviderData == nil {
-        return
-    }
+	if req.ProviderData == nil {
+		return
+	}
 
-    d.client = req.ProviderData.(*basegql.Client)
-    // Maybe wrapping the client in the tunneled client should be done here?
-    // or even in the provider itself?
+	d.client = req.ProviderData.(*basegql.Client)
+	// Maybe wrapping the client in the tunneled client should be done here?
+	// or even in the provider itself?
 }
- 
+
 type appDataSourceOutput struct {
 	Name           types.String `tfsdk:"name"`
 	AppUrl         types.String `tfsdk:"appurl"`
@@ -49,7 +49,7 @@ type appDataSourceOutput struct {
 }
 
 func (d *appDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-    resp.Schema = schema.Schema{
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieve info about graphql app",
 
 		Attributes: map[string]schema.Attribute{
@@ -73,18 +73,18 @@ func (d *appDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest
 				Computed: true,
 			},
 			"healthchecks": schema.ListAttribute{
-				Computed: true,
-                ElementType: types.StringType,
+				Computed:    true,
+				ElementType: types.StringType,
 			},
 			"ipaddresses": schema.ListAttribute{
-				Computed: true,
-                ElementType: types.StringType,
+				Computed:    true,
+				ElementType: types.StringType,
 			},
 			"currentrelease": schema.StringAttribute{
 				Computed: true,
 			},
 		},
-    }
+	}
 }
 
 func (d *appDataSourceType) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -105,7 +105,7 @@ func (d *appDataSourceType) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	a := appDataSourceOutput{
-		Name:           types.StringValue(appName),
+		Name:           data.Name,
 		AppUrl:         types.StringValue(queryresp.App.AppUrl),
 		Hostname:       types.StringValue(queryresp.App.Hostname),
 		Id:             types.StringValue(queryresp.App.Id),
