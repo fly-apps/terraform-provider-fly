@@ -140,9 +140,9 @@ func (p *flyProvider) Resources(ctx context.Context) []func() resource.Resource 
 
 func (p *flyProvider) DataSources(_ context.Context) []func() datasource.DataSource {
     return []func() datasource.DataSource {
-        NewAppDataSource,  // fly_app
-		NewCertDataSource, // fly_cert
-		// "fly_ip":     ipDataSourceType{},
+        NewAppDataSource,    // fly_app
+		NewCertDataSource,   // fly_cert
+		NewIpDataSource,     // fly_ip
 		NewVolumeDataSource, // fly_volume
 	}
 }
