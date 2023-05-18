@@ -15,6 +15,7 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &volumeDataSourceType{}
+var _ datasource.DataSourceWithConfigure = &appDataSourceType{}
 
 type volumeDataSourceType struct{
     client *basegql.Client

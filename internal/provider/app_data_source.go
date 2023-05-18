@@ -12,6 +12,7 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &appDataSourceType{}
+var _ datasource.DataSourceWithConfigure = &appDataSourceType{}
 
 func NewAppDataSource() datasource.DataSource {
     return &appDataSourceType{}
@@ -45,7 +46,6 @@ type appDataSourceOutput struct {
 	Healthchecks   []string     `tfsdk:"healthchecks"`
 	Ipaddresses    []string     `tfsdk:"ipaddresses"`
 	Currentrelease types.String `tfsdk:"currentrelease"`
-	//Secrets        types.Map    `tfsdk:"secrets"`
 }
 
 func (d *appDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
@@ -112,8 +112,6 @@ func (d *appDataSourceType) Read(ctx context.Context, req datasource.ReadRequest
 		Status:         types.StringValue(queryresp.App.Status),
 		Deployed:       types.BoolValue(queryresp.App.Deployed),
 		Currentrelease: types.StringValue(queryresp.App.CurrentRelease.Id),
-		// Healthchecks:   []string{},
-		// Ipaddresses:    []string{},
 	}
 
 	for _, s := range queryresp.App.HealthChecks.Nodes {
