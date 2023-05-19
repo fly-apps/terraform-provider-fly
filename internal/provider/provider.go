@@ -131,7 +131,7 @@ func (p *flyProvider) Resources(ctx context.Context) []func() resource.Resource 
 	return []func() resource.Resource{
 		// 		"fly_app":     flyAppResourceType{},
 		// 		"fly_volume":  flyVolumeResourceType{},
-		// 		"fly_ip":      flyIpResourceType{},
+		NewIpResource,   // fly_ip
 		NewCertResource, // fly_cert
 		// 		"fly_machine": flyMachineResourceType{},
 		// 	}
