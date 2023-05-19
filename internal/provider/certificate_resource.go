@@ -4,27 +4,39 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
+	basegql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	"strings"
 )
 
-var _ tfsdkprovider.ResourceType = flyCertResourceType{}
-var _ resource.Resource = flyCertResource{}
-var _ resource.ResourceWithImportState = flyCertResource{}
-
-type flyCertResourceType struct{}
+var _ resource.Resource = &flyCertResource{}
+var _ resource.ResourceWithConfigure = &flyCertResource{}
+var _ resource.ResourceWithImportState = &flyCertResource{}
 
 type flyCertResource struct {
-	provider provider
+	client *basegql.Client
+}
+
+func NewCertResource() resource.Resource {
+	return &flyCertResource{}
+}
+
+func (r *flyCertResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_cert"
+}
+
+func (r *flyCertResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	r.client = req.ProviderData.(*basegql.Client)
 }
 
 type flyCertResourceData struct {
@@ -37,76 +49,61 @@ type flyCertResourceData struct {
 	Check                     types.Bool   `tfsdk:"check"`
 }
 
-func (t flyCertResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *flyCertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly certificate resource",
-		Attributes: map[string]tfsdk.Attribute{
-			"app": {
+		Attributes: map[string]schema.Attribute{
+			"app": schema.StringAttribute{
 				MarkdownDescription: "Name of app to attach to",
 				Required:            true,
-				Type:                types.StringType,
 			},
-			"id": {
+			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of certificate",
 				Computed:            true,
-				Type:                types.StringType,
 			},
-			"dnsvalidationinstructions": {
+			"dnsvalidationinstructions": schema.StringAttribute{
 				MarkdownDescription: "DnsValidationHostname",
-				Type:                types.StringType,
 				Computed:            true,
 			},
-			"dnsvalidationtarget": {
+			"dnsvalidationtarget": schema.StringAttribute{
 				MarkdownDescription: "DnsValidationTarget",
-				Type:                types.StringType,
 				Computed:            true,
 			},
-			"dnsvalidationhostname": {
+			"dnsvalidationhostname": schema.StringAttribute{
 				MarkdownDescription: "DnsValidationHostname",
-				Type:                types.StringType,
 				Computed:            true,
 			},
-			"check": {
+			"check": schema.BoolAttribute{
 				MarkdownDescription: "check",
-				Type:                types.BoolType,
 				Computed:            true,
 			},
-			"hostname": {
+			"hostname": schema.StringAttribute{
 				MarkdownDescription: "hostname",
-				Type:                types.StringType,
 				Required:            true,
 			},
 		},
-	}, nil
+	}
 }
 
-func (t flyCertResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyCertResource{
-		provider: provider,
-	}, diags
-}
-
-func (cr flyCertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *flyCertResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyCertResourceData
 
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	q, err := graphql.AddCertificate(context.Background(), *cr.provider.client, data.Appid.Value, data.Hostname.Value)
+	q, err := graphql.AddCertificate(context.Background(), *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create cert", err.Error())
 	}
 
 	data = flyCertResourceData{
-		Id:                        types.String{Value: q.AddCertificate.Certificate.Id},
-		Appid:                     types.String{Value: data.Appid.Value},
-		Dnsvalidationinstructions: types.String{Value: q.AddCertificate.Certificate.DnsValidationInstructions},
-		Dnsvalidationhostname:     types.String{Value: q.AddCertificate.Certificate.DnsValidationHostname},
-		Dnsvalidationtarget:       types.String{Value: q.AddCertificate.Certificate.DnsValidationTarget},
-		Hostname:                  types.String{Value: q.AddCertificate.Certificate.Hostname},
-		Check:                     types.Bool{Value: q.AddCertificate.Certificate.Check},
+		Id:                        types.StringValue(q.AddCertificate.Certificate.Id),
+		Appid:                     types.StringValue(data.Appid.ValueString()),
+		Dnsvalidationinstructions: types.StringValue(q.AddCertificate.Certificate.DnsValidationInstructions),
+		Dnsvalidationhostname:     types.StringValue(q.AddCertificate.Certificate.DnsValidationHostname),
+		Dnsvalidationtarget:       types.StringValue(q.AddCertificate.Certificate.DnsValidationTarget),
+		Hostname:                  types.StringValue(q.AddCertificate.Certificate.Hostname),
+		Check:                     types.BoolValue(q.AddCertificate.Certificate.Check),
 	}
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", data))
@@ -118,16 +115,16 @@ func (cr flyCertResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 }
 
-func (cr flyCertResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *flyCertResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data flyCertResourceData
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	hostname := data.Hostname.Value
-	app := data.Appid.Value
+	hostname := data.Hostname.ValueString()
+	app := data.Appid.ValueString()
 
-	query, err := graphql.GetCertificate(context.Background(), *cr.provider.client, app, hostname)
+	query, err := graphql.GetCertificate(context.Background(), *r.client, app, hostname)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -141,13 +138,13 @@ func (cr flyCertResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	data = flyCertResourceData{
-		Id:                        types.String{Value: query.App.Certificate.Id},
-		Appid:                     types.String{Value: data.Appid.Value},
-		Dnsvalidationinstructions: types.String{Value: query.App.Certificate.DnsValidationInstructions},
-		Dnsvalidationhostname:     types.String{Value: query.App.Certificate.DnsValidationHostname},
-		Dnsvalidationtarget:       types.String{Value: query.App.Certificate.DnsValidationTarget},
-		Hostname:                  types.String{Value: query.App.Certificate.Hostname},
-		Check:                     types.Bool{Value: query.App.Certificate.Check},
+		Id:                        types.StringValue(query.App.Certificate.Id),
+		Appid:                     types.StringValue(data.Appid.ValueString()),
+		Dnsvalidationinstructions: types.StringValue(query.App.Certificate.DnsValidationInstructions),
+		Dnsvalidationhostname:     types.StringValue(query.App.Certificate.DnsValidationHostname),
+		Dnsvalidationtarget:       types.StringValue(query.App.Certificate.DnsValidationTarget),
+		Hostname:                  types.StringValue(query.App.Certificate.Hostname),
+		Check:                     types.BoolValue(query.App.Certificate.Check),
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -157,18 +154,19 @@ func (cr flyCertResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 }
 
-func (cr flyCertResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (cr *flyCertResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("The fly api does not allow updating certs once created", "Try deleting and then recreating the cert with new options")
 	return
+	// We could maybe instead flag every attribute with RequiresReplace?
 }
 
-func (cr flyCertResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *flyCertResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data flyCertResourceData
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	_, err := graphql.DeleteCertificate(context.Background(), *cr.provider.client, data.Appid.Value, data.Hostname.Value)
+	_, err := graphql.DeleteCertificate(context.Background(), *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Delete cert failed", err.Error())
 	}
@@ -180,7 +178,7 @@ func (cr flyCertResource) Delete(ctx context.Context, req resource.DeleteRequest
 	}
 }
 
-func (cr flyCertResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *flyCertResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	idParts := strings.Split(req.ID, ",")
 
 	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
