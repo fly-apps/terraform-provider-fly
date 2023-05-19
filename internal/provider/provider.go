@@ -130,9 +130,9 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 func (p *flyProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		// 		"fly_app":     flyAppResourceType{},
-		// 		"fly_volume":  flyVolumeResourceType{},
-		NewIpResource,   // fly_ip
-		NewCertResource, // fly_cert
+		NewVolumeResource, // fly_volume
+		NewIpResource,     // fly_ip
+		NewCertResource,   // fly_cert
 		// 		"fly_machine": flyMachineResourceType{},
 		// 	}
 	}
