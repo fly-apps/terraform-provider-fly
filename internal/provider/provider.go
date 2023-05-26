@@ -23,6 +23,12 @@ import (
 
 var _ provider.Provider = &flyProvider{}
 
+type ProviderConfig struct {
+    httpEndpoint string
+    gqclient *graphql.Client
+    httpClient * hreq.Client
+}
+
 type flyProvider struct {
 	configured   bool
 	version      string
@@ -123,18 +129,24 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		p.httpEndpoint = "_api.internal:4280"
 	}
 	p.configured = true
-	resp.DataSourceData = p.client
-	resp.ResourceData = p.client
+    
+    configForResources := ProviderConfig {
+        httpEndpoint: p.httpEndpoint,
+        gqclient: p.client,
+        httpClient: p.httpClient,
+    }
+
+	resp.DataSourceData = configForResources
+	resp.ResourceData = configForResources
 }
 
 func (p *flyProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewAppResource,     // fly_app
-		NewVolumeResource, // fly_volume
-		NewIpResource,     // fly_ip
-		NewCertResource,   // fly_cert
-		// 		"fly_machine": flyMachineResourceType{},
-		// 	}
+		NewVolumeResource,  // fly_volume
+		NewIpResource,      // fly_ip
+		NewCertResource,    // fly_cert
+		NewMachineResource, // fly_machine
 	}
 }
 

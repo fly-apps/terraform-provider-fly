@@ -79,7 +79,8 @@ func (d *certDataSourceType) Configure(_ context.Context, req datasource.Configu
 		return
 	}
 
-	d.client = req.ProviderData.(*basegql.Client)
+    config := req.ProviderData.(ProviderConfig)
+	d.client = config.gqclient
 }
 
 func (d *certDataSourceType) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {

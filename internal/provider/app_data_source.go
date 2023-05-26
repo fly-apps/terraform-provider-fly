@@ -31,7 +31,8 @@ func (d *appDataSourceType) Configure(_ context.Context, req datasource.Configur
 		return
 	}
 
-	d.client = req.ProviderData.(*basegql.Client)
+    config := req.ProviderData.(ProviderConfig)
+	d.client = config.gqclient
 	// Maybe wrapping the client in the tunneled client should be done here?
 	// or even in the provider itself?
 }

@@ -38,7 +38,8 @@ func (r *flyVolumeResource) Configure(_ context.Context, req resource.ConfigureR
 		return
 	}
 
-	r.client = req.ProviderData.(*basegql.Client)
+    config := req.ProviderData.(ProviderConfig)
+	r.client = config.gqclient
 }
 
 type flyVolumeResourceData struct {

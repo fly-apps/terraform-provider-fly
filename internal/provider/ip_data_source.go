@@ -34,7 +34,8 @@ func (d *ipDataSourceType) Configure(_ context.Context, req datasource.Configure
 		return
 	}
 
-	d.client = req.ProviderData.(*basegql.Client)
+    config := req.ProviderData.(ProviderConfig)
+	d.client = config.gqclient
 }
 
 // Matches Schema

@@ -38,7 +38,8 @@ func (r *flyIpResource) Configure(_ context.Context, req resource.ConfigureReque
 		return
 	}
 
-	r.client = req.ProviderData.(*basegql.Client)
+    config := req.ProviderData.(ProviderConfig)
+	r.client = config.gqclient
 }
 
 type flyIpResourceData struct {
