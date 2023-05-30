@@ -12,7 +12,7 @@ require (
 	github.com/imroc/req/v3 v3.34.0
 	github.com/miekg/dns v1.1.50
 	github.com/vektah/gqlparser/v2 v2.5.1
-	golang.org/x/crypto v0.8.0
+	golang.org/x/crypto v0.9.0
 	golang.zx2c4.com/wireguard v0.0.0-20220920152132-bb719d3a6e2c
 )
 
@@ -66,8 +66,8 @@ require (
 	github.com/zclconf/go-cty v1.13.1 // indirect
 	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	golang.org/x/tools v0.8.0 // indirect
