@@ -24,9 +24,9 @@ import (
 var _ provider.Provider = &flyProvider{}
 
 type ProviderConfig struct {
-    httpEndpoint string
-    gqclient *graphql.Client
-    httpClient * hreq.Client
+	httpEndpoint string
+	gqclient     *graphql.Client
+	httpClient   *hreq.Client
 }
 
 type flyProvider struct {
@@ -129,12 +129,12 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		p.httpEndpoint = "_api.internal:4280"
 	}
 	p.configured = true
-    
-    configForResources := ProviderConfig {
-        httpEndpoint: p.httpEndpoint,
-        gqclient: p.client,
-        httpClient: p.httpClient,
-    }
+
+	configForResources := ProviderConfig{
+		httpEndpoint: p.httpEndpoint,
+		gqclient:     p.client,
+		httpClient:   p.httpClient,
+	}
 
 	resp.DataSourceData = configForResources
 	resp.ResourceData = configForResources

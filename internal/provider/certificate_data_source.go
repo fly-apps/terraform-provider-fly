@@ -79,7 +79,7 @@ func (d *certDataSourceType) Configure(_ context.Context, req datasource.Configu
 		return
 	}
 
-    config := req.ProviderData.(ProviderConfig)
+	config := req.ProviderData.(ProviderConfig)
 	d.client = config.gqclient
 }
 

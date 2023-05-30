@@ -36,7 +36,7 @@ func (r *flyCertResource) Configure(_ context.Context, req resource.ConfigureReq
 		return
 	}
 
-    config := req.ProviderData.(ProviderConfig)
+	config := req.ProviderData.(ProviderConfig)
 	r.client = config.gqclient
 }
 

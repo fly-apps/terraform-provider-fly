@@ -20,9 +20,8 @@ var _ resource.Resource = &flyMachineResource{}
 var _ resource.ResourceWithConfigure = &flyMachineResource{}
 var _ resource.ResourceWithImportState = &flyMachineResource{}
 
-
 type flyMachineResource struct {
-    config ProviderConfig
+	config ProviderConfig
 }
 
 func NewMachineResource() resource.Resource {
@@ -37,7 +36,7 @@ func (r *flyMachineResource) Configure(_ context.Context, req resource.Configure
 	if req.ProviderData == nil {
 		return
 	}
-    r.config = req.ProviderData.(ProviderConfig)
+	r.config = req.ProviderData.(ProviderConfig)
 }
 
 type TfPort struct {
@@ -77,7 +76,7 @@ type TfMachineMount struct {
 	Volume    types.String `tfsdk:"volume"`
 }
 
-func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse){
+func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly machine resource",
 		Attributes: map[string]schema.Attribute{
@@ -117,17 +116,17 @@ func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"cmd": schema.ListAttribute{
 				MarkdownDescription: "cmd",
 				Optional:            true,
-                ElementType: types.StringType,
+				ElementType:         types.StringType,
 			},
 			"entrypoint": schema.ListAttribute{
 				MarkdownDescription: "image entrypoint",
 				Optional:            true,
-                ElementType: types.StringType,
+				ElementType:         types.StringType,
 			},
 			"exec": schema.ListAttribute{
 				MarkdownDescription: "exec command",
 				Optional:            true,
-                ElementType: types.StringType,
+				ElementType:         types.StringType,
 			},
 			"image": schema.StringAttribute{
 				MarkdownDescription: "docker image",
@@ -152,70 +151,70 @@ func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				MarkdownDescription: "Optional environment variables, keys and values must be strings",
 				Optional:            true,
 				Computed:            true,
-                ElementType: types.StringType,
+				ElementType:         types.StringType,
 			},
 			"mounts": schema.ListNestedAttribute{
 				MarkdownDescription: "Volume mounts",
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
-                    Attributes: map[string]schema.Attribute{
-                        "encrypted": schema.BoolAttribute{
-                            Optional: true,
-                            Computed: true,
-                        },
-                        "path": schema.StringAttribute{
-                            Required:            true,
-                            MarkdownDescription: "Path for volume to be mounted on vm",
-                        },
-                        "size_gb": schema.Int64Attribute{
-                            Optional: true,
-                            Computed: true,
-                        },
-                        "volume": schema.StringAttribute{
-                            Required:            true,
-                            MarkdownDescription: "Name or ID of volume",
-                        },
-                    },
-                },
+					Attributes: map[string]schema.Attribute{
+						"encrypted": schema.BoolAttribute{
+							Optional: true,
+							Computed: true,
+						},
+						"path": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "Path for volume to be mounted on vm",
+						},
+						"size_gb": schema.Int64Attribute{
+							Optional: true,
+							Computed: true,
+						},
+						"volume": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "Name or ID of volume",
+						},
+					},
+				},
 			},
 			"services": schema.ListNestedAttribute{
 				MarkdownDescription: "services",
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
-                    Attributes: map[string]schema.Attribute{
-                        "ports": schema.ListNestedAttribute{
-                            MarkdownDescription: "External ports and handlers",
-                            Required:            true,
-                            NestedObject: schema.NestedAttributeObject {
-                                Attributes: map[string]schema.Attribute{
-                                    "port": schema.Int64Attribute{
-                                        MarkdownDescription: "External port",
-                                        Required:            true,
-                                    },
-                                    "handlers": schema.ListAttribute{
-                                        MarkdownDescription: "How the edge should process requests",
-                                        Optional:            true,
-                                        ElementType: types.StringType,
-                                    },
-                                },
-                            },
-                        },
-                        "protocol": schema.StringAttribute{
-                            MarkdownDescription: "network protocol",
-                            Required:            true,
-                        },
-                        "internal_port": schema.Int64Attribute{
-                            MarkdownDescription: "Port application listens on internally",
-                            Required:            true,
-                        },
-                    },
-                },
+					Attributes: map[string]schema.Attribute{
+						"ports": schema.ListNestedAttribute{
+							MarkdownDescription: "External ports and handlers",
+							Required:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"port": schema.Int64Attribute{
+										MarkdownDescription: "External port",
+										Required:            true,
+									},
+									"handlers": schema.ListAttribute{
+										MarkdownDescription: "How the edge should process requests",
+										Optional:            true,
+										ElementType:         types.StringType,
+									},
+								},
+							},
+						},
+						"protocol": schema.StringAttribute{
+							MarkdownDescription: "network protocol",
+							Required:            true,
+						},
+						"internal_port": schema.Int64Attribute{
+							MarkdownDescription: "Port application listens on internally",
+							Required:            true,
+						},
+					},
+				},
 			},
 		},
 	}
 }
 
-/// todo
+// / todo
 func (r *flyMachineResource) ValidateOpenTunnel() (bool, error) {
 	_, err := r.config.httpClient.R().Get(fmt.Sprintf("http://%s", r.config.httpEndpoint))
 	if err != nil {
@@ -340,9 +339,8 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 	tflog.Info(ctx, fmt.Sprintf("%+v", newMachine))
 
 	// env := utils.KVToTfMap(newMachine.Config.Env, types.StringType)
-    env, diags := types.MapValueFrom(ctx, types.StringType, newMachine.Config.Env)
-    resp.Diagnostics.Append(diags...)
-
+	env, diags := types.MapValueFrom(ctx, types.StringType, newMachine.Config.Env)
+	resp.Diagnostics.Append(diags...)
 
 	tfservices := ServicesToTfServices(newMachine.Config.Services)
 
@@ -415,8 +413,8 @@ func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// env := utils.KVToTfMap(machine.Config.Env, types.StringType)
-    env, diags := types.MapValueFrom(ctx, types.StringType, machine.Config.Env)
-    resp.Diagnostics.Append(diags...)
+	env, diags := types.MapValueFrom(ctx, types.StringType, machine.Config.Env)
+	resp.Diagnostics.Append(diags...)
 
 	tfservices := ServicesToTfServices(machine.Config.Services)
 
@@ -553,8 +551,8 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	// env := utils.KVToTfMap(updatedMachine.Config.Env, types.StringType)
-    env, diags := types.MapValueFrom(ctx, types.StringType, updatedMachine.Config.Env)
-    resp.Diagnostics.Append(diags...)
+	env, diags := types.MapValueFrom(ctx, types.StringType, updatedMachine.Config.Env)
+	resp.Diagnostics.Append(diags...)
 
 	tfservices := ServicesToTfServices(updatedMachine.Config.Services)
 

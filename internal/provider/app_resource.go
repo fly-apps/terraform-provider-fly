@@ -19,7 +19,7 @@ var _ resource.Resource = &flyAppResource{}
 var _ resource.ResourceWithConfigure = &flyAppResource{}
 var _ resource.ResourceWithImportState = &flyAppResource{}
 
-type flyAppResource struct{
+type flyAppResource struct {
 	client *basegql.Client
 }
 
@@ -36,10 +36,9 @@ func (r *flyAppResource) Configure(_ context.Context, req resource.ConfigureRequ
 		return
 	}
 
-    config := req.ProviderData.(ProviderConfig)
+	config := req.ProviderData.(ProviderConfig)
 	r.client = config.gqclient
 }
-
 
 type flyAppResourceData struct {
 	Name   types.String `tfsdk:"name"`
@@ -49,7 +48,7 @@ type flyAppResourceData struct {
 	Id     types.String `tfsdk:"id"`
 }
 
-func (r *flyAppResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse){
+func (r *flyAppResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly app resource",
 

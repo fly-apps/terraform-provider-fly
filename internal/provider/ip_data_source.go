@@ -34,7 +34,7 @@ func (d *ipDataSourceType) Configure(_ context.Context, req datasource.Configure
 		return
 	}
 
-    config := req.ProviderData.(ProviderConfig)
+	config := req.ProviderData.(ProviderConfig)
 	d.client = config.gqclient
 }
 

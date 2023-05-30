@@ -34,7 +34,7 @@ func (d *volumeDataSourceType) Configure(_ context.Context, req datasource.Confi
 		return
 	}
 
-    config := req.ProviderData.(ProviderConfig)
+	config := req.ProviderData.(ProviderConfig)
 	d.client = config.gqclient
 }
 

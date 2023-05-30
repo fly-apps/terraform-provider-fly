@@ -38,7 +38,7 @@ func (r *flyIpResource) Configure(_ context.Context, req resource.ConfigureReque
 		return
 	}
 
-    config := req.ProviderData.(ProviderConfig)
+	config := req.ProviderData.(ProviderConfig)
 	r.client = config.gqclient
 }
 
