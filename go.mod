@@ -6,6 +6,7 @@ require (
 	github.com/Khan/genqlient v0.5.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/terraform-plugin-framework v1.2.0
+	github.com/hashicorp/terraform-plugin-framework-validators v0.10.0
 	github.com/hashicorp/terraform-plugin-go v0.15.0
 	github.com/hashicorp/terraform-plugin-log v0.8.0
 	github.com/hashicorp/terraform-plugin-testing v1.2.0
@@ -44,8 +45,6 @@ require (
 	github.com/hashicorp/terraform-registry-address v0.2.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.0.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
-	github.com/imdario/mergo v0.3.13 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -59,7 +58,6 @@ require (
 	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
 	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
 	github.com/quic-go/quic-go v0.34.0 // indirect
-	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
