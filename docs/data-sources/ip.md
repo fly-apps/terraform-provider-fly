@@ -17,13 +17,13 @@ Fly ip data source
 
 ### Required
 
+- `address` (String) IP address
 - `app` (String) Name of app attached to
-- `type` (String) v4 or v6
 
 ### Read-Only
 
-- `address` (String) IP address
 - `id` (String) ID of address
 - `region` (String) region
+- `type` (String) v4 or v6
 
 
