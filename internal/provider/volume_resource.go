@@ -94,6 +94,7 @@ func (r *flyVolumeResource) Create(ctx context.Context, req resource.CreateReque
 	q, err := graphql.CreateVolume(ctx, *r.client, data.Appid.ValueString(), data.Name.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create volume", err.Error())
+        return
 	}
 
 	data = flyVolumeResourceData{
@@ -126,6 +127,7 @@ func (r *flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, 
 	query, err := graphql.VolumeQuery(ctx, *r.client, app, internalId)
 	if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+        return
 	}
 
 	// this query will currently still return success if it finds nothing, so check it:
@@ -164,6 +166,7 @@ func (r *flyVolumeResource) Delete(ctx context.Context, req resource.DeleteReque
 		_, err := graphql.DeleteVolume(ctx, *r.client, data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Delete volume failed", err.Error())
+            return
 		}
 	}
 

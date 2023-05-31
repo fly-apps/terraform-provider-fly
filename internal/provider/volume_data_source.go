@@ -94,6 +94,7 @@ func (d *volumeDataSourceType) Read(ctx context.Context, req datasource.ReadRequ
 	query, err := graphql.VolumeQuery(ctx, *d.client, app, internalId)
 	if err != nil {
 		resp.Diagnostics.AddError("Query failed", err.Error())
+        return
 	}
 
 	// this query will currently still return success if it finds nothing, so check it:

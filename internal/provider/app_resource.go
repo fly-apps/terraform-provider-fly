@@ -146,6 +146,7 @@ func (r *flyAppResource) Read(ctx context.Context, req resource.ReadRequest, res
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+        return
 	}
 
 	data := flyAppResourceData{
@@ -207,6 +208,7 @@ func (r flyAppResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Delete app failed", err.Error())
+        return
 	}
 
 	resp.State.RemoveResource(ctx)

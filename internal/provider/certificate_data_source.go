@@ -107,6 +107,7 @@ func (d *certDataSourceType) Read(ctx context.Context, req datasource.ReadReques
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+        return
 	}
 
 	data = certDataSourceOutput{

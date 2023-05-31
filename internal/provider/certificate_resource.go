@@ -95,6 +95,7 @@ func (r *flyCertResource) Create(ctx context.Context, req resource.CreateRequest
 	q, err := graphql.AddCertificate(ctx, *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create cert", err.Error())
+        return
 	}
 
 	data = flyCertResourceData{
@@ -136,6 +137,7 @@ func (r *flyCertResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+        return
 	}
 
 	data = flyCertResourceData{
@@ -170,6 +172,7 @@ func (r *flyCertResource) Delete(ctx context.Context, req resource.DeleteRequest
 	_, err := graphql.DeleteCertificate(ctx, *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Delete cert failed", err.Error())
+        return
 	}
 
 	resp.State.RemoveResource(ctx)
