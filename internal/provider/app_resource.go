@@ -89,7 +89,7 @@ func (r *flyAppResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	if data.Org.IsUnknown() {
-		defaultOrg, err := utils.GetDefaultOrg(*r.client)
+		defaultOrg, err := utils.GetDefaultOrg(ctx, *r.client)
 		if err != nil {
 			resp.Diagnostics.AddError("Could not detect default organization", err.Error())
 			return
@@ -97,14 +97,14 @@ func (r *flyAppResource) Create(ctx context.Context, req resource.CreateRequest,
 		data.OrgId = types.StringValue(defaultOrg.Id)
 		data.Org = types.StringValue(defaultOrg.Name)
 	} else {
-		org, err := graphql.Organization(context.Background(), *r.client, data.Org.ValueString())
+		org, err := graphql.Organization(ctx, *r.client, data.Org.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Could not resolve organization", err.Error())
 			return
 		}
 		data.OrgId = types.StringValue(org.Organization.Id)
 	}
-	mresp, err := graphql.CreateAppMutation(context.Background(), *r.client, data.Name.ValueString(), data.OrgId.ValueString())
+	mresp, err := graphql.CreateAppMutation(ctx, *r.client, data.Name.ValueString(), data.OrgId.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Create app failed", err.Error())
 		return
@@ -135,7 +135,7 @@ func (r *flyAppResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	query, err := graphql.GetFullApp(context.Background(), *r.client, state.Name.ValueString())
+	query, err := graphql.GetFullApp(ctx, *r.client, state.Name.ValueString())
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -199,7 +199,7 @@ func (r flyAppResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	_, err := graphql.DeleteAppMutation(context.Background(), *r.client, data.Name.ValueString())
+	_, err := graphql.DeleteAppMutation(ctx, *r.client, data.Name.ValueString())
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {

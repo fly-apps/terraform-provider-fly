@@ -96,7 +96,7 @@ func (d *certDataSourceType) Read(ctx context.Context, req datasource.ReadReques
 	hostname := data.Hostname.ValueString()
 	app := data.Appid.ValueString()
 
-	query, err := graphql.GetCertificate(context.Background(), *d.client, app, hostname)
+	query, err := graphql.GetCertificate(ctx, *d.client, app, hostname)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {

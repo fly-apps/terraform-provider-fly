@@ -91,7 +91,7 @@ func (r *flyVolumeResource) Create(ctx context.Context, req resource.CreateReque
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	q, err := graphql.CreateVolume(context.Background(), *r.client, data.Appid.ValueString(), data.Name.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
+	q, err := graphql.CreateVolume(ctx, *r.client, data.Appid.ValueString(), data.Name.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create volume", err.Error())
 	}
@@ -123,7 +123,7 @@ func (r *flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, 
 	internalId := data.Id.ValueString()[4:]
 	app := data.Appid.ValueString()
 
-	query, err := graphql.VolumeQuery(context.Background(), *r.client, app, internalId)
+	query, err := graphql.VolumeQuery(ctx, *r.client, app, internalId)
 	if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
 	}
@@ -161,7 +161,7 @@ func (r *flyVolumeResource) Delete(ctx context.Context, req resource.DeleteReque
 	resp.Diagnostics.Append(diags...)
 
 	if !data.Id.IsUnknown() && !data.Id.IsNull() && data.Id.ValueString() != "" {
-		_, err := graphql.DeleteVolume(context.Background(), *r.client, data.Id.ValueString())
+		_, err := graphql.DeleteVolume(ctx, *r.client, data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Delete volume failed", err.Error())
 		}

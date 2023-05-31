@@ -100,7 +100,7 @@ func (d *appDataSourceType) Read(ctx context.Context, req datasource.ReadRequest
 
 	appName := data.Name.ValueString()
 
-	queryresp, err := graphql.GetFullApp(context.Background(), *d.client, appName)
+	queryresp, err := graphql.GetFullApp(ctx, *d.client, appName)
 	if err != nil {
 		resp.Diagnostics.AddError("Query failed", err.Error())
 	}

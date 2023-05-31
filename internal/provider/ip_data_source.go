@@ -88,7 +88,7 @@ func (d *ipDataSourceType) Read(ctx context.Context, req datasource.ReadRequest,
 	addr := data.Address.ValueString()
 	app := data.Appid.ValueString()
 
-	query, err := graphql.IpAddressQuery(context.Background(), *d.client, app, addr)
+	query, err := graphql.IpAddressQuery(ctx, *d.client, app, addr)
 	tflog.Info(ctx, fmt.Sprintf("Query res: for %s %s %+v", app, addr, query))
 	var errList gqlerror.List
 	if errors.As(err, &errList) {

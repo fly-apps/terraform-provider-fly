@@ -88,7 +88,7 @@ func (r *flyIpResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", data))
 
-	q, err := graphql.AllocateIpAddress(context.Background(), *r.client, data.Appid.ValueString(), data.Region.ValueString(), graphql.IPAddressType(data.Type.ValueString()))
+	q, err := graphql.AllocateIpAddress(ctx, *r.client, data.Appid.ValueString(), data.Region.ValueString(), graphql.IPAddressType(data.Type.ValueString()))
 	tflog.Info(ctx, fmt.Sprintf("query res in create ip: %+v", q))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ip addr", err.Error())
@@ -120,7 +120,7 @@ func (r flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	addr := data.Address.ValueString()
 	app := data.Appid.ValueString()
 
-	query, err := graphql.IpAddressQuery(context.Background(), *r.client, app, addr)
+	query, err := graphql.IpAddressQuery(ctx, *r.client, app, addr)
 	tflog.Info(ctx, fmt.Sprintf("Query res: for %s %s %+v", app, addr, query))
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
@@ -162,7 +162,7 @@ func (r *flyIpResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	resp.Diagnostics.Append(diags...)
 
 	if !data.Id.IsUnknown() && !data.Id.IsNull() && data.Id.ValueString() != "" {
-		_, err := graphql.ReleaseIpAddress(context.Background(), *r.client, data.Id.ValueString())
+		_, err := graphql.ReleaseIpAddress(ctx, *r.client, data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Release ip failed", err.Error())
 		}

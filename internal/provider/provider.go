@@ -115,7 +115,7 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	p.client = &client
 
 	if data.UseInternalTunnel.ValueBool() {
-		org, err := providerGraphql.Organization(context.Background(), client, data.InternalTunnelOrg.ValueString())
+		org, err := providerGraphql.Organization(ctx, client, data.InternalTunnelOrg.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Could not resolve organization", err.Error())
 			return

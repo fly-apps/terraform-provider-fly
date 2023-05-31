@@ -311,7 +311,7 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 
 	if !data.Env.IsUnknown() {
 		var env map[string]string
-		data.Env.ElementsAs(context.Background(), &env, false)
+		data.Env.ElementsAs(ctx, &env, false)
 		createReq.Config.Env = env
 	}
 	if len(data.Mounts) > 0 {
@@ -521,7 +521,7 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 		updateReq.Config.Env = env
 	} else if !plan.Env.IsUnknown() {
 		var env map[string]string
-		plan.Env.ElementsAs(context.Background(), &env, false)
+		plan.Env.ElementsAs(ctx, &env, false)
 		updateReq.Config.Env = env
 	} else if !state.Env.IsUnknown() {
 		updateReq.Config.Env = map[string]string{}

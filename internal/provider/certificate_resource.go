@@ -92,7 +92,7 @@ func (r *flyCertResource) Create(ctx context.Context, req resource.CreateRequest
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	q, err := graphql.AddCertificate(context.Background(), *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
+	q, err := graphql.AddCertificate(ctx, *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create cert", err.Error())
 	}
@@ -125,7 +125,7 @@ func (r *flyCertResource) Read(ctx context.Context, req resource.ReadRequest, re
 	hostname := data.Hostname.ValueString()
 	app := data.Appid.ValueString()
 
-	query, err := graphql.GetCertificate(context.Background(), *r.client, app, hostname)
+	query, err := graphql.GetCertificate(ctx, *r.client, app, hostname)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -167,7 +167,7 @@ func (r *flyCertResource) Delete(ctx context.Context, req resource.DeleteRequest
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	_, err := graphql.DeleteCertificate(context.Background(), *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
+	_, err := graphql.DeleteCertificate(ctx, *r.client, data.Appid.ValueString(), data.Hostname.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Delete cert failed", err.Error())
 	}
