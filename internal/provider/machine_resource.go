@@ -395,7 +395,7 @@ func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 	_, err := r.ValidateOpenTunnel()
 	if err != nil {
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
-        return
+		return
 	}
 
 	var data flyMachineResourceData
@@ -607,7 +607,7 @@ func (r *flyMachineResource) Delete(ctx context.Context, req resource.DeleteRequ
 	_, err := r.ValidateOpenTunnel()
 	if err != nil {
 		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
-        return
+		return
 	}
 
 	machineApi := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)

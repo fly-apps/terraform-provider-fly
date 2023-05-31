@@ -101,7 +101,7 @@ func (d *ipDataSourceType) Read(ctx context.Context, req datasource.ReadRequest,
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
-        return
+		return
 	}
 
 	region := query.App.IpAddress.Region

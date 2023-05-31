@@ -92,7 +92,7 @@ func (r *flyIpResource) Create(ctx context.Context, req resource.CreateRequest, 
 	tflog.Info(ctx, fmt.Sprintf("query res in create ip: %+v", q))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ip addr", err.Error())
-        return
+		return
 	}
 
 	data = flyIpResourceData{
@@ -134,7 +134,7 @@ func (r flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
-        return
+		return
 	}
 
 	data = flyIpResourceData{
@@ -167,7 +167,7 @@ func (r *flyIpResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		_, err := graphql.ReleaseIpAddress(ctx, *r.client, data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Release ip failed", err.Error())
-            return
+			return
 		}
 	}
 
