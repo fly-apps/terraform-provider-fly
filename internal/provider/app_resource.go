@@ -4,23 +4,41 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	basegql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/fly-apps/terraform-provider-fly/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-var _ tfsdkprovider.ResourceType = flyAppResourceType{}
-var _ resource.Resource = flyAppResource{}
-var _ resource.ResourceWithImportState = flyAppResource{}
+var _ resource.Resource = &flyAppResource{}
+var _ resource.ResourceWithConfigure = &flyAppResource{}
+var _ resource.ResourceWithImportState = &flyAppResource{}
 
-type flyAppResourceType struct{}
+type flyAppResource struct {
+	client *basegql.Client
+}
+
+func NewAppResource() resource.Resource {
+	return &flyAppResource{}
+}
+
+func (r *flyAppResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_app"
+}
+
+func (r *flyAppResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	config := req.ProviderData.(ProviderConfig)
+	r.client = config.gqclient
+}
 
 type flyAppResourceData struct {
 	Name   types.String `tfsdk:"name"`
@@ -28,64 +46,39 @@ type flyAppResourceData struct {
 	OrgId  types.String `tfsdk:"orgid"`
 	AppUrl types.String `tfsdk:"appurl"`
 	Id     types.String `tfsdk:"id"`
-	//Secrets types.Map    `tfsdk:"secrets"`
 }
 
-func (ar flyAppResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		// This description is used by the documentation generator and the language server.
+func (r *flyAppResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly app resource",
 
-		Attributes: map[string]tfsdk.Attribute{
-			"name": {
+		Attributes: map[string]schema.Attribute{
+			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of application",
 				Required:            true,
-				Type:                types.StringType,
 			},
-			"org": {
+			"org": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "Optional org slug to operate upon",
-				Type:                types.StringType,
 			},
-			"orgid": {
+			"orgid": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "readonly orgid",
-				Type:                types.StringType,
 			},
-			"id": {
+			"id": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "readonly app id",
-				Type:                types.StringType,
 			},
-			"appurl": {
+			"appurl": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "readonly appUrl",
-				Type:                types.StringType,
 			},
-			//"secrets": {
-			//	Sensitive:           true,
-			//	Optional:            true,
-			//	MarkdownDescription: "App secrets",
-			//	Type:                types.MapType{ElemType: types.StringType},
-			//},
 		},
-	}, nil
+	}
 }
 
-func (ar flyAppResourceType) NewResource(_ context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyAppResource{
-		provider: provider,
-	}, diags
-}
-
-type flyAppResource struct {
-	provider provider
-}
-
-func (r flyAppResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *flyAppResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyAppResourceData
 
 	diags := req.Plan.Get(ctx, &data)
@@ -95,57 +88,35 @@ func (r flyAppResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	if data.Org.Unknown {
-		defaultOrg, err := utils.GetDefaultOrg(*r.provider.client)
+	if data.Org.IsUnknown() {
+		defaultOrg, err := utils.GetDefaultOrg(ctx, *r.client)
 		if err != nil {
 			resp.Diagnostics.AddError("Could not detect default organization", err.Error())
 			return
 		}
-		data.OrgId.Value = defaultOrg.Id
-		data.Org.Value = defaultOrg.Name
+		data.OrgId = types.StringValue(defaultOrg.Id)
+		data.Org = types.StringValue(defaultOrg.Name)
 	} else {
-		org, err := graphql.Organization(context.Background(), *r.provider.client, data.Org.Value)
+		org, err := graphql.Organization(ctx, *r.client, data.Org.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Could not resolve organization", err.Error())
 			return
 		}
-		data.OrgId.Value = org.Organization.Id
+		data.OrgId = types.StringValue(org.Organization.Id)
 	}
-	mresp, err := graphql.CreateAppMutation(context.Background(), *r.provider.client, data.Name.Value, data.OrgId.Value)
+	mresp, err := graphql.CreateAppMutation(ctx, *r.client, data.Name.ValueString(), data.OrgId.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Create app failed", err.Error())
 		return
 	}
 
 	data = flyAppResourceData{
-		Org:    types.String{Value: mresp.CreateApp.App.Organization.Slug},
-		OrgId:  types.String{Value: mresp.CreateApp.App.Organization.Id},
-		Name:   types.String{Value: mresp.CreateApp.App.Name},
-		AppUrl: types.String{Value: mresp.CreateApp.App.AppUrl},
-		Id:     types.String{Value: mresp.CreateApp.App.Id},
+		Org:    types.StringValue(mresp.CreateApp.App.Organization.Slug),
+		OrgId:  types.StringValue(mresp.CreateApp.App.Organization.Id),
+		Name:   types.StringValue(mresp.CreateApp.App.Name),
+		AppUrl: types.StringValue(mresp.CreateApp.App.AppUrl),
+		Id:     types.StringValue(mresp.CreateApp.App.Id),
 	}
-
-	//if len(data.Secrets.Elems) > 0 {
-	//	var rawSecrets map[string]string
-	//	data.Secrets.ElementsAs(context.Background(), &rawSecrets, false)
-	//	var secrets []graphql.SecretInput
-	//	for k, v := range rawSecrets {
-	//		secrets = append(secrets, graphql.SecretInput{
-	//			Key:   k,
-	//			Value: v,
-	//		})
-	//	}
-	//	_, err := graphql.SetSecrets(context.Background(), *r.provider.client, graphql.SetSecretsInput{
-	//		AppId:      data.Id.Value,
-	//		Secrets:    secrets,
-	//		ReplaceAll: true,
-	//	})
-	//	if err != nil {
-	//		resp.Diagnostics.AddError("Could not set rawSecrets", err.Error())
-	//		return
-	//	}
-	//	data.Secrets = utils.KVToTfMap(rawSecrets, types.StringType)
-	//}
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -154,7 +125,7 @@ func (r flyAppResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 }
 
-func (r flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state flyAppResourceData
 
 	diags := req.State.Get(ctx, &state)
@@ -164,7 +135,7 @@ func (r flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	query, err := graphql.GetFullApp(context.Background(), *r.provider.client, state.Name.Value)
+	query, err := graphql.GetFullApp(ctx, *r.client, state.Name.ValueString())
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -175,19 +146,16 @@ func (r flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+		return
 	}
 
 	data := flyAppResourceData{
-		Name:   types.String{Value: query.App.Name},
-		Org:    types.String{Value: query.App.Organization.Slug},
-		OrgId:  types.String{Value: query.App.Organization.Id},
-		AppUrl: types.String{Value: query.App.AppUrl},
-		Id:     types.String{Value: query.App.Id},
+		Name:   types.StringValue(query.App.Name),
+		Org:    types.StringValue(query.App.Organization.Slug),
+		OrgId:  types.StringValue(query.App.Organization.Id),
+		AppUrl: types.StringValue(query.App.AppUrl),
+		Id:     types.StringValue(query.App.Id),
 	}
-
-	//if !state.Secrets.Null && !state.Secrets.Unknown {
-	//	data.Secrets = state.Secrets
-	//}
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -196,7 +164,7 @@ func (r flyAppResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 }
 
-func (r flyAppResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *flyAppResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan flyAppResourceData
 
 	diags := req.Plan.Get(ctx, &plan)
@@ -212,34 +180,12 @@ func (r flyAppResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	tflog.Info(ctx, fmt.Sprintf("existing: %+v, new: %+v", state, plan))
 
-	if !plan.Org.Unknown && plan.Org.Value != state.Org.Value {
-		resp.Diagnostics.AddError("Can't mutate org of existing app", "Can't switch org"+state.Org.Value+" to "+plan.Org.Value)
+	if !plan.Org.IsUnknown() && plan.Org.ValueString() != state.Org.ValueString() {
+		resp.Diagnostics.AddError("Can't mutate org of existing app", "Can't switch org"+state.Org.ValueString()+" to "+plan.Org.ValueString())
 	}
-	if !plan.Name.Null && plan.Name.Value != state.Name.Value {
-		resp.Diagnostics.AddError("Can't mutate Name of existing app", "Can't switch name "+state.Name.Value+" to "+plan.Name.Value)
+	if !plan.Name.IsNull() && plan.Name.ValueString() != state.Name.ValueString() {
+		resp.Diagnostics.AddError("Can't mutate Name of existing app", "Can't switch name "+state.Name.ValueString()+" to "+plan.Name.ValueString())
 	}
-
-	//if len(plan.Secrets.Elems) > 0 {
-	//	var rawSecrets map[string]string
-	//	plan.Secrets.ElementsAs(context.Background(), &rawSecrets, false)
-	//	var secrets []graphql.SecretInput
-	//	for k, v := range rawSecrets {
-	//		secrets = append(secrets, graphql.SecretInput{
-	//			Key:   k,
-	//			Value: v,
-	//		})
-	//	}
-	//	_, err := graphql.SetSecrets(context.Background(), *r.provider.client, graphql.SetSecretsInput{
-	//		AppId:      state.Id.Value,
-	//		Secrets:    secrets,
-	//		ReplaceAll: true,
-	//	})
-	//	if err != nil {
-	//		resp.Diagnostics.AddError("Could not set rawSecrets", err.Error())
-	//		return
-	//	}
-	//	state.Secrets = utils.KVToTfMap(rawSecrets, types.StringType)
-	//}
 
 	resp.State.Set(ctx, state)
 
@@ -254,7 +200,7 @@ func (r flyAppResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	_, err := graphql.DeleteAppMutation(context.Background(), *r.provider.client, data.Name.Value)
+	_, err := graphql.DeleteAppMutation(ctx, *r.client, data.Name.ValueString())
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -262,6 +208,7 @@ func (r flyAppResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Delete app failed", err.Error())
+		return
 	}
 
 	resp.State.RemoveResource(ctx)

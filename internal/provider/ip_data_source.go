@@ -4,25 +4,41 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	basegql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
-	"github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdkprovider.DataSourceType = ipDataSourceType{}
-var _ datasource.DataSource = ipDataSource{}
+var _ datasource.DataSource = &ipDataSourceType{}
+var _ datasource.DataSourceWithConfigure = &ipDataSourceType{}
 
-type ipDataSourceType struct{}
+func NewIpDataSource() datasource.DataSource {
+	return &ipDataSourceType{}
+}
 
-// Matches getSchema
+type ipDataSourceType struct {
+	client *basegql.Client
+}
+
+func (d *ipDataSourceType) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = "fly_ip"
+}
+
+func (d *ipDataSourceType) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	config := req.ProviderData.(ProviderConfig)
+	d.client = config.gqclient
+}
+
+// Matches Schema
 type ipDataSourceOutput struct {
 	Id      types.String `tfsdk:"id"`
 	Appid   types.String `tfsdk:"app"`
@@ -31,51 +47,35 @@ type ipDataSourceOutput struct {
 	Type    types.String `tfsdk:"type"`
 }
 
-func (i ipDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (d *ipDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly ip data source",
-		Attributes: map[string]tfsdk.Attribute{
-			"address": {
+		Attributes: map[string]schema.Attribute{
+			"address": schema.StringAttribute{
 				MarkdownDescription: "IP address",
-				Type:                types.StringType,
-				Computed:            true,
+				Required:            true,
 			},
-			"app": {
+			"app": schema.StringAttribute{
 				MarkdownDescription: "Name of app attached to",
 				Required:            true,
-				Type:                types.StringType,
 			},
-			"id": {
+			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of address",
 				Computed:            true,
-				Type:                types.StringType,
 			},
-			"type": {
+			"type": schema.StringAttribute{
 				MarkdownDescription: "v4 or v6",
-				Type:                types.StringType,
-				Required:            true,
-			},
-			"region": {
-				MarkdownDescription: "region",
-				Type:                types.StringType,
 				Computed:            true,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					modifiers.StringDefault("global"),
-				},
+			},
+			"region": schema.StringAttribute{
+				MarkdownDescription: "region",
+				Computed:            true,
 			},
 		},
-	}, nil
+	}
 }
 
-func (i ipDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return ipDataSource{
-		provider: provider,
-	}, diags
-}
-
-func (i ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *ipDataSourceType) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data ipDataSourceOutput
 
 	diags := req.Config.Get(ctx, &data)
@@ -85,10 +85,10 @@ func (i ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp
 		return
 	}
 
-	addr := data.Address.Value
-	app := data.Appid.Value
+	addr := data.Address.ValueString()
+	app := data.Appid.ValueString()
 
-	query, err := graphql.IpAddressQuery(context.Background(), *i.provider.client, app, addr)
+	query, err := graphql.IpAddressQuery(ctx, *d.client, app, addr)
 	tflog.Info(ctx, fmt.Sprintf("Query res: for %s %s %+v", app, addr, query))
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
@@ -101,14 +101,20 @@ func (i ipDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+		return
+	}
+
+	region := query.App.IpAddress.Region
+	if region == "" {
+		region = "global"
 	}
 
 	data = ipDataSourceOutput{
-		Id:      types.String{Value: query.App.IpAddress.Id},
-		Appid:   types.String{Value: data.Appid.Value},
-		Region:  types.String{Value: query.App.IpAddress.Region},
-		Type:    types.String{Value: string(query.App.IpAddress.Type)},
-		Address: types.String{Value: query.App.IpAddress.Address},
+		Id:      types.StringValue(query.App.IpAddress.Id),
+		Appid:   data.Appid,
+		Region:  types.StringValue(region),
+		Type:    types.StringValue(string(query.App.IpAddress.Type)),
+		Address: types.StringValue(query.App.IpAddress.Address),
 	}
 
 	diags = resp.State.Set(ctx, &data)

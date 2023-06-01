@@ -7,8 +7,8 @@ import (
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 )
 
-func GetDefaultOrg(client graphql2.Client) (*graphql.OrgsQueryOrganizationsOrganizationConnectionNodesOrganization, error) {
-	queryresp, err := graphql.OrgsQuery(context.Background(), client)
+func GetDefaultOrg(ctx context.Context, client graphql2.Client) (*graphql.OrgsQueryOrganizationsOrganizationConnectionNodesOrganization, error) {
+	queryresp, err := graphql.OrgsQuery(ctx, client)
 	if err != nil {
 		return nil, err
 	}

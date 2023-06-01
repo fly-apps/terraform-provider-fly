@@ -6,26 +6,40 @@ import (
 	"fmt"
 	"strings"
 
+	basegql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
-	"github.com/fly-apps/terraform-provider-fly/internal/provider/modifiers"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-var _ tfsdkprovider.ResourceType = flyIpResourceType{}
-var _ resource.Resource = flyIpResource{}
-var _ resource.ResourceWithImportState = flyIpResource{}
-
-type flyIpResourceType struct{}
+var _ resource.Resource = &flyIpResource{}
+var _ resource.ResourceWithConfigure = &flyIpResource{}
+var _ resource.ResourceWithImportState = &flyIpResource{}
 
 type flyIpResource struct {
-	provider provider
+	client *basegql.Client
+}
+
+func NewIpResource() resource.Resource {
+	return &flyIpResource{}
+}
+
+func (r *flyIpResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_ip"
+}
+
+func (r *flyIpResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	config := req.ProviderData.(ProviderConfig)
+	r.client = config.gqclient
 }
 
 type flyIpResourceData struct {
@@ -36,51 +50,37 @@ type flyIpResourceData struct {
 	Type    types.String `tfsdk:"type"`
 }
 
-func (t flyIpResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *flyIpResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly ip resource",
-		Attributes: map[string]tfsdk.Attribute{
-			"address": {
+		Attributes: map[string]schema.Attribute{
+			"address": schema.StringAttribute{
 				MarkdownDescription: "IP address",
-				Type:                types.StringType,
 				Computed:            true,
 			},
-			"app": {
+			"app": schema.StringAttribute{
 				MarkdownDescription: "Name of app to attach to",
 				Required:            true,
-				Type:                types.StringType,
 			},
-			"id": {
+			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of address",
 				Computed:            true,
-				Type:                types.StringType,
 			},
-			"type": {
+			"type": schema.StringAttribute{
 				MarkdownDescription: "v4 or v6",
-				Type:                types.StringType,
 				Required:            true,
 			},
-			"region": {
+			"region": schema.StringAttribute{
 				MarkdownDescription: "region",
-				Type:                types.StringType,
+				Optional:            true,
 				Computed:            true,
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					modifiers.StringDefault("global"),
-				},
+				Default:             stringdefault.StaticString("global"),
 			},
 		},
-	}, nil
+	}
 }
 
-func (t flyIpResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyIpResource{
-		provider: provider,
-	}, diags
-}
-
-func (ir flyIpResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *flyIpResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyIpResourceData
 
 	diags := req.Plan.Get(ctx, &data)
@@ -88,18 +88,19 @@ func (ir flyIpResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", data))
 
-	q, err := graphql.AllocateIpAddress(context.Background(), *ir.provider.client, data.Appid.Value, data.Region.Value, graphql.IPAddressType(data.Type.Value))
+	q, err := graphql.AllocateIpAddress(ctx, *r.client, data.Appid.ValueString(), data.Region.ValueString(), graphql.IPAddressType(data.Type.ValueString()))
 	tflog.Info(ctx, fmt.Sprintf("query res in create ip: %+v", q))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create ip addr", err.Error())
+		return
 	}
 
 	data = flyIpResourceData{
-		Id:      types.String{Value: q.AllocateIpAddress.IpAddress.Id},
-		Appid:   types.String{Value: data.Appid.Value},
-		Region:  types.String{Value: q.AllocateIpAddress.IpAddress.Region},
-		Type:    types.String{Value: string(q.AllocateIpAddress.IpAddress.Type)},
-		Address: types.String{Value: q.AllocateIpAddress.IpAddress.Address},
+		Id:      types.StringValue(q.AllocateIpAddress.IpAddress.Id),
+		Appid:   types.StringValue(data.Appid.ValueString()),
+		Region:  types.StringValue(q.AllocateIpAddress.IpAddress.Region),
+		Type:    types.StringValue(string(q.AllocateIpAddress.IpAddress.Type)),
+		Address: types.StringValue(q.AllocateIpAddress.IpAddress.Address),
 	}
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", data))
@@ -111,16 +112,16 @@ func (ir flyIpResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 }
 
-func (ir flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data flyIpResourceData
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	addr := data.Address.Value
-	app := data.Appid.Value
+	addr := data.Address.ValueString()
+	app := data.Appid.ValueString()
 
-	query, err := graphql.IpAddressQuery(context.Background(), *ir.provider.client, app, addr)
+	query, err := graphql.IpAddressQuery(ctx, *r.client, app, addr)
 	tflog.Info(ctx, fmt.Sprintf("Query res: for %s %s %+v", app, addr, query))
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
@@ -133,14 +134,15 @@ func (ir flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+		return
 	}
 
 	data = flyIpResourceData{
-		Id:      types.String{Value: query.App.IpAddress.Id},
-		Appid:   types.String{Value: data.Appid.Value},
-		Region:  types.String{Value: query.App.IpAddress.Region},
-		Type:    types.String{Value: string(query.App.IpAddress.Type)},
-		Address: types.String{Value: query.App.IpAddress.Address},
+		Id:      types.StringValue(query.App.IpAddress.Id),
+		Appid:   types.StringValue(data.Appid.ValueString()),
+		Region:  types.StringValue(query.App.IpAddress.Region),
+		Type:    types.StringValue(string(query.App.IpAddress.Type)),
+		Address: types.StringValue(query.App.IpAddress.Address),
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -150,21 +152,22 @@ func (ir flyIpResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 }
 
-func (ir flyIpResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *flyIpResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("The fly api does not allow updating ips once created", "Try deleting and then recreating the ip with new options")
 	return
 }
 
-func (ir flyIpResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *flyIpResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data flyIpResourceData
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	if !data.Id.Unknown && !data.Id.Null && data.Id.Value != "" {
-		_, err := graphql.ReleaseIpAddress(context.Background(), *ir.provider.client, data.Id.Value)
+	if !data.Id.IsUnknown() && !data.Id.IsNull() && data.Id.ValueString() != "" {
+		_, err := graphql.ReleaseIpAddress(ctx, *r.client, data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Release ip failed", err.Error())
+			return
 		}
 	}
 
@@ -175,7 +178,7 @@ func (ir flyIpResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 }
 
-func (ir flyIpResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *flyIpResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	idParts := strings.Split(req.ID, ",")
 
 	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {

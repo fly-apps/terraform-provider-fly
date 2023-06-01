@@ -31,10 +31,9 @@ resource "fly_volume" "exampleApp" {
 - `region` (String) region
 - `size` (Number) Size of volume in GB
 
-### Optional
+### Read-Only
 
 - `id` (String) ID of volume
-- `internalid` (String) Internal ID
 
 ## Import
 

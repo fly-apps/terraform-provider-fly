@@ -18,13 +18,12 @@ Fly volume resource
 ### Required
 
 - `app` (String) Name of app attached to
-- `internalid` (String) Internal ID
+- `id` (String) ID of volume
+
+### Read-Only
+
 - `name` (String) name
 - `region` (String) region
 - `size` (Number) Size of volume in GB
-
-### Optional
-
-- `id` (String) ID of volume
 
 

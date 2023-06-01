@@ -3,23 +3,27 @@ package provider
 import (
 	"context"
 	"errors"
+	basegql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/vektah/gqlparser/v2/gqlerror"
-
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdkprovider.DataSourceType = certDataSourceType{}
-var _ datasource.DataSource = certDataSource{}
+var _ datasource.DataSource = &certDataSourceType{}
+var _ datasource.DataSourceWithConfigure = &certDataSourceType{}
 
-type certDataSourceType struct{}
+type certDataSourceType struct {
+	client *basegql.Client
+}
 
-// Matches getSchema
+func (d *certDataSourceType) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = "fly_cert"
+}
+
+// Matches Schema
 type certDataSourceOutput struct {
 	Id                        types.String `tfsdk:"id"`
 	Appid                     types.String `tfsdk:"app"`
@@ -30,58 +34,56 @@ type certDataSourceOutput struct {
 	Check                     types.Bool   `tfsdk:"check"`
 }
 
-func (t certDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (d *certDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly certificate data source",
-		Attributes: map[string]tfsdk.Attribute{
-			"app": {
+		Attributes: map[string]schema.Attribute{
+			"app": schema.StringAttribute{
 				MarkdownDescription: "Name of app attached to",
 				Required:            true,
-				Type:                types.StringType,
 			},
-			"id": {
+			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of certificate",
 				Computed:            true,
-				Type:                types.StringType,
 			},
-			"dnsvalidationinstructions": {
+			"dnsvalidationinstructions": schema.StringAttribute{
 				MarkdownDescription: "DnsValidationHostname",
-				Type:                types.StringType,
 				Computed:            true,
 			},
-			"dnsvalidationtarget": {
+			"dnsvalidationtarget": schema.StringAttribute{
 				MarkdownDescription: "DnsValidationTarget",
-				Type:                types.StringType,
 				Computed:            true,
 			},
-			"dnsvalidationhostname": {
+			"dnsvalidationhostname": schema.StringAttribute{
 				MarkdownDescription: "DnsValidationHostname",
-				Type:                types.StringType,
 				Computed:            true,
 			},
-			"check": {
+			"check": schema.BoolAttribute{
 				MarkdownDescription: "check",
-				Type:                types.BoolType,
 				Computed:            true,
 			},
-			"hostname": {
+			"hostname": schema.StringAttribute{
 				MarkdownDescription: "hostname",
-				Type:                types.StringType,
 				Required:            true,
 			},
 		},
-	}, nil
+	}
 }
 
-func (t certDataSourceType) NewDataSource(ctx context.Context, in tfsdkprovider.Provider) (datasource.DataSource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return certDataSource{
-		provider: provider,
-	}, diags
+func NewCertDataSource() datasource.DataSource {
+	return &certDataSourceType{}
 }
 
-func (d certDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *certDataSourceType) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	config := req.ProviderData.(ProviderConfig)
+	d.client = config.gqclient
+}
+
+func (d *certDataSourceType) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data certDataSourceOutput
 
 	diags := req.Config.Get(ctx, &data)
@@ -91,10 +93,10 @@ func (d certDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 		return
 	}
 
-	hostname := data.Hostname.Value
-	app := data.Appid.Value
+	hostname := data.Hostname.ValueString()
+	app := data.Appid.ValueString()
 
-	query, err := graphql.GetCertificate(context.Background(), *d.provider.client, app, hostname)
+	query, err := graphql.GetCertificate(ctx, *d.client, app, hostname)
 	var errList gqlerror.List
 	if errors.As(err, &errList) {
 		for _, err := range errList {
@@ -105,16 +107,17 @@ func (d certDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 		}
 	} else if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+		return
 	}
 
 	data = certDataSourceOutput{
-		Id:                        types.String{Value: query.App.Certificate.Id},
-		Appid:                     types.String{Value: data.Appid.Value},
-		Dnsvalidationinstructions: types.String{Value: query.App.Certificate.DnsValidationInstructions},
-		Dnsvalidationhostname:     types.String{Value: query.App.Certificate.DnsValidationHostname},
-		Dnsvalidationtarget:       types.String{Value: query.App.Certificate.DnsValidationTarget},
-		Hostname:                  types.String{Value: query.App.Certificate.Hostname},
-		Check:                     types.Bool{Value: query.App.Certificate.Check},
+		Id:                        types.StringValue(query.App.Certificate.Id),
+		Appid:                     data.Appid,
+		Dnsvalidationinstructions: types.StringValue(query.App.Certificate.DnsValidationInstructions),
+		Dnsvalidationhostname:     types.StringValue(query.App.Certificate.DnsValidationHostname),
+		Dnsvalidationtarget:       types.StringValue(query.App.Certificate.DnsValidationTarget),
+		Hostname:                  types.StringValue(query.App.Certificate.Hostname),
+		Check:                     types.BoolValue(query.App.Certificate.Check),
 	}
 
 	diags = resp.State.Set(ctx, &data)
