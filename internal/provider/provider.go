@@ -3,24 +3,33 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/Khan/genqlient/graphql"
 	providerGraphql "github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/fly-apps/terraform-provider-fly/internal/utils"
 	"github.com/fly-apps/terraform-provider-fly/internal/wg"
 	hreq "github.com/imroc/req/v3"
-	"net/http"
-	"os"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ tfsdkprovider.Provider = &provider{}
+var _ provider.Provider = &flyProvider{}
 
-type provider struct {
+type ProviderConfig struct {
+	httpEndpoint string
+	gqclient     *graphql.Client
+	httpClient   *hreq.Client
+}
+
+type flyProvider struct {
 	configured   bool
 	version      string
 	token        string
@@ -29,7 +38,7 @@ type provider struct {
 	httpClient   *hreq.Client
 }
 
-type providerData struct {
+type flyProviderData struct {
 	FlyToken             types.String `tfsdk:"fly_api_token"`
 	FlyHttpEndpoint      types.String `tfsdk:"fly_http_endpoint"`
 	UseInternalTunnel    types.Bool   `tfsdk:"useinternaltunnel"`
@@ -37,8 +46,12 @@ type providerData struct {
 	InternalTunnelRegion types.String `tfsdk:"internaltunnelregion"`
 }
 
-func (p *provider) Configure(ctx context.Context, req tfsdkprovider.ConfigureRequest, resp *tfsdkprovider.ConfigureResponse) {
-	var data providerData
+func (p *flyProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "fly"
+}
+
+func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data flyProviderData
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
@@ -47,17 +60,17 @@ func (p *provider) Configure(ctx context.Context, req tfsdkprovider.ConfigureReq
 	}
 
 	var token string
-	if data.FlyToken.Unknown {
+	if data.FlyToken.IsUnknown() {
 		resp.Diagnostics.AddWarning(
 			"Unable to create client",
 			"Cannot use unknown value as token",
 		)
 		return
 	}
-	if data.FlyToken.Null || data.FlyToken.Unknown {
+	if data.FlyToken.IsNull() {
 		token = os.Getenv("FLY_API_TOKEN")
 	} else {
-		token = data.FlyToken.Value
+		token = data.FlyToken.ValueString()
 	}
 	if token == "" {
 		resp.Diagnostics.AddError(
@@ -71,8 +84,8 @@ func (p *provider) Configure(ctx context.Context, req tfsdkprovider.ConfigureReq
 
 	endpoint, exists := os.LookupEnv("FLY_HTTP_ENDPOINT")
 	httpEndpoint := "127.0.0.1:4280"
-	if !data.FlyHttpEndpoint.Null && !data.FlyHttpEndpoint.Unknown {
-		httpEndpoint = data.FlyHttpEndpoint.Value
+	if !data.FlyHttpEndpoint.IsNull() && !data.FlyHttpEndpoint.IsUnknown() {
+		httpEndpoint = data.FlyHttpEndpoint.ValueString()
 	} else if exists {
 		httpEndpoint = endpoint
 	}
@@ -101,13 +114,13 @@ func (p *provider) Configure(ctx context.Context, req tfsdkprovider.ConfigureReq
 	client := graphql.NewClient("https://api.fly.io/graphql", &h)
 	p.client = &client
 
-	if data.UseInternalTunnel.Value {
-		org, err := providerGraphql.Organization(context.Background(), client, data.InternalTunnelOrg.Value)
+	if data.UseInternalTunnel.ValueBool() {
+		org, err := providerGraphql.Organization(ctx, client, data.InternalTunnelOrg.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Could not resolve organization", err.Error())
 			return
 		}
-		tunnel, err := wg.Establish(ctx, org.Organization.Id, data.InternalTunnelRegion.Value, token, &client)
+		tunnel, err := wg.Establish(ctx, org.Organization.Id, data.InternalTunnelRegion.ValueString(), token, &client)
 		if err != nil {
 			resp.Diagnostics.AddError("failed to open internal tunnel", err.Error())
 			return
@@ -116,60 +129,63 @@ func (p *provider) Configure(ctx context.Context, req tfsdkprovider.ConfigureReq
 		p.httpEndpoint = "_api.internal:4280"
 	}
 	p.configured = true
+
+	configForResources := ProviderConfig{
+		httpEndpoint: p.httpEndpoint,
+		gqclient:     p.client,
+		httpClient:   p.httpClient,
+	}
+
+	resp.DataSourceData = configForResources
+	resp.ResourceData = configForResources
 }
 
-func (p *provider) GetResources(ctx context.Context) (map[string]tfsdkprovider.ResourceType, diag.Diagnostics) {
-
-	return map[string]tfsdkprovider.ResourceType{
-		"fly_app":     flyAppResourceType{},
-		"fly_volume":  flyVolumeResourceType{},
-		"fly_ip":      flyIpResourceType{},
-		"fly_cert":    flyCertResourceType{},
-		"fly_machine": flyMachineResourceType{},
-	}, nil
+func (p *flyProvider) Resources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		NewAppResource,     // fly_app
+		NewVolumeResource,  // fly_volume
+		NewIpResource,      // fly_ip
+		NewCertResource,    // fly_cert
+		NewMachineResource, // fly_machine
+	}
 }
 
-func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdkprovider.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdkprovider.DataSourceType{
-		"fly_app":    appDataSourceType{},
-		"fly_cert":   certDataSourceType{},
-		"fly_ip":     ipDataSourceType{},
-		"fly_volume": volumeDataSourceType{},
-	}, nil
+func (p *flyProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		NewAppDataSource,    // fly_app
+		NewCertDataSource,   // fly_cert
+		NewIpDataSource,     // fly_ip
+		NewVolumeDataSource, // fly_volume
+	}
 }
 
-func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"fly_api_token": {
+func (p *flyProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"fly_api_token": schema.StringAttribute{
 				MarkdownDescription: "fly.io api token. If not set checks env for FLY_API_TOKEN",
 				Optional:            true,
-				Type:                types.StringType,
 			},
-			"fly_http_endpoint": {
+			"fly_http_endpoint": schema.StringAttribute{
 				MarkdownDescription: "Where the provider should look to find the fly http endpoint",
 				Optional:            true,
-				Type:                types.StringType,
 			},
-			"useinternaltunnel": {
+			"useinternaltunnel": schema.BoolAttribute{
 				Optional: true,
-				Type:     types.BoolType,
 			},
-			"internaltunnelorg": {
+			"internaltunnelorg": schema.StringAttribute{
 				Optional: true,
-				Type:     types.StringType,
 			},
-			"internaltunnelregion": {
+			"internaltunnelregion": schema.StringAttribute{
 				Optional: true,
-				Type:     types.StringType,
 			},
 		},
-	}, nil
+	}
 }
 
-func New(version string) func() tfsdkprovider.Provider {
-	return func() tfsdkprovider.Provider {
-		return &provider{
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &flyProvider{
 			version: version,
 		}
 	}
@@ -180,17 +196,17 @@ func New(version string) func() tfsdkprovider.Provider {
 // this helper can be skipped and the provider type can be directly type
 // asserted (e.g. provider: in.(*provider)), however using this can prevent
 // potential panics.
-func convertProviderType(in tfsdkprovider.Provider) (provider, diag.Diagnostics) {
+func convertProviderType(in provider.Provider) (flyProvider, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	p, ok := in.(*provider)
+	p, ok := in.(*flyProvider)
 
 	if !ok {
 		diags.AddError(
 			"Unexpected Provider Instance Type",
 			fmt.Sprintf("While creating the data source or resource, an unexpected provider type (%T) was received. This is always a bug in the provider code and should be reported to the provider developers.", p),
 		)
-		return provider{}, diags
+		return flyProvider{}, diags
 	}
 
 	if p == nil {
@@ -198,7 +214,7 @@ func convertProviderType(in tfsdkprovider.Provider) (provider, diag.Diagnostics)
 			"Unexpected Provider Instance Type",
 			"While creating the data source or resource, an unexpected empty provider instance was received. This is always a bug in the provider code and should be reported to the provider developers.",
 		)
-		return provider{}, diags
+		return flyProvider{}, diags
 	}
 
 	return *p, diags

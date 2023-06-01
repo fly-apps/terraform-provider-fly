@@ -32,11 +32,14 @@ resource "fly_ip" "exampleIpv6" {
 - `app` (String) Name of app to attach to
 - `type` (String) v4 or v6
 
+### Optional
+
+- `region` (String) region
+
 ### Read-Only
 
 - `address` (String) IP address
 - `id` (String) ID of address
-- `region` (String) region
 
 ## Import
 

@@ -3,103 +3,106 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
+	basegql "github.com/Khan/genqlient/graphql"
 	"github.com/fly-apps/terraform-provider-fly/graphql"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	tfsdkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-var _ tfsdkprovider.ResourceType = flyVolumeResourceType{}
-var _ resource.Resource = flyVolumeResource{}
-var _ resource.ResourceWithImportState = flyVolumeResource{}
-
-type flyVolumeResourceType struct{}
+var _ resource.Resource = &flyVolumeResource{}
+var _ resource.ResourceWithConfigure = &flyVolumeResource{}
+var _ resource.ResourceWithImportState = &flyVolumeResource{}
 
 type flyVolumeResource struct {
-	provider provider
+	client *basegql.Client
+}
+
+func NewVolumeResource() resource.Resource {
+	return &flyVolumeResource{}
+}
+
+func (r *flyVolumeResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "fly_volume"
+}
+
+func (r *flyVolumeResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	config := req.ProviderData.(ProviderConfig)
+	r.client = config.gqclient
 }
 
 type flyVolumeResourceData struct {
-	Id         types.String `tfsdk:"id"`
-	Name       types.String `tfsdk:"name"`
-	Size       types.Int64  `tfsdk:"size"`
-	Appid      types.String `tfsdk:"app"`
-	Region     types.String `tfsdk:"region"`
-	Internalid types.String `tfsdk:"internalid"`
+	Id     types.String `tfsdk:"id"`
+	Name   types.String `tfsdk:"name"`
+	Size   types.Int64  `tfsdk:"size"`
+	Appid  types.String `tfsdk:"app"`
+	Region types.String `tfsdk:"region"`
 }
 
-func (t flyVolumeResourceType) GetSchema(context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *flyVolumeResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		MarkdownDescription: "Fly volume resource",
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of volume",
-				Type:                types.StringType,
 				Computed:            true,
-				Optional:            true,
+				// Optional:            true,
 			},
-			"app": {
+			"app": schema.StringAttribute{
 				MarkdownDescription: "Name of app to attach to",
 				Required:            true,
-				Type:                types.StringType,
 			},
-			"size": {
+			"size": schema.Int64Attribute{
 				MarkdownDescription: "Size of volume in GB",
 				Required:            true,
-				Type:                types.Int64Type,
 			},
-			"name": {
+			"name": schema.StringAttribute{
 				MarkdownDescription: "name",
-				Type:                types.StringType,
 				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z0-9_]+$`),
+						"only allows alphanumeric characters and underscores",
+					),
+				},
 			},
-			"region": {
+			"region": schema.StringAttribute{
 				MarkdownDescription: "region",
-				Type:                types.StringType,
 				Required:            true,
-			},
-			"internalid": {
-				MarkdownDescription: "Internal ID",
-				Type:                types.StringType,
-				Computed:            true,
-				Optional:            true,
 			},
 		},
-	}, nil
+	}
 }
 
-func (t flyVolumeResourceType) NewResource(ctx context.Context, in tfsdkprovider.Provider) (resource.Resource, diag.Diagnostics) {
-	provider, diags := convertProviderType(in)
-
-	return flyVolumeResource{
-		provider: provider,
-	}, diags
-}
-
-func (vr flyVolumeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *flyVolumeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data flyVolumeResourceData
 
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	q, err := graphql.CreateVolume(context.Background(), *vr.provider.client, data.Appid.Value, data.Name.Value, data.Region.Value, int(data.Size.Value))
+	q, err := graphql.CreateVolume(ctx, *r.client, data.Appid.ValueString(), data.Name.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create volume", err.Error())
+		return
 	}
 
 	data = flyVolumeResourceData{
-		Id:         types.String{Value: q.CreateVolume.Volume.Id},
-		Name:       types.String{Value: q.CreateVolume.Volume.Name},
-		Size:       types.Int64{Value: int64(q.CreateVolume.Volume.SizeGb)},
-		Appid:      types.String{Value: data.Appid.Value},
-		Region:     types.String{Value: q.CreateVolume.Volume.Region},
-		Internalid: types.String{Value: q.CreateVolume.Volume.InternalId},
+		Id:     types.StringValue(q.CreateVolume.Volume.Id),
+		Name:   types.StringValue(q.CreateVolume.Volume.Name),
+		Size:   types.Int64Value(int64(q.CreateVolume.Volume.SizeGb)),
+		Appid:  types.StringValue(data.Appid.ValueString()),
+		Region: types.StringValue(q.CreateVolume.Volume.Region),
 	}
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", data))
@@ -111,27 +114,34 @@ func (vr flyVolumeResource) Create(ctx context.Context, req resource.CreateReque
 	}
 }
 
-func (vr flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data flyVolumeResourceData
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	internalId := data.Internalid.Value
-	app := data.Appid.Value
+	// strip leading vol_ off name
+	internalId := data.Id.ValueString()[4:]
+	app := data.Appid.ValueString()
 
-	query, err := graphql.VolumeQuery(context.Background(), *vr.provider.client, app, internalId)
+	query, err := graphql.VolumeQuery(ctx, *r.client, app, internalId)
 	if err != nil {
 		resp.Diagnostics.AddError("Read: query failed", err.Error())
+		return
+	}
+
+	// this query will currently still return success if it finds nothing, so check it:
+	if query.App.Volume.Id == "" {
+		resp.Diagnostics.AddError("Query failed", "Could not find matching volume")
 	}
 
 	data = flyVolumeResourceData{
-		Id:         types.String{Value: query.App.Volume.Id},
-		Name:       types.String{Value: query.App.Volume.Name},
-		Size:       types.Int64{Value: int64(query.App.Volume.SizeGb)},
-		Appid:      types.String{Value: data.Appid.Value},
-		Region:     types.String{Value: query.App.Volume.Region},
-		Internalid: types.String{Value: query.App.Volume.InternalId},
+		Id:     types.StringValue(query.App.Volume.Id),
+		Name:   types.StringValue(query.App.Volume.Name),
+		Size:   types.Int64Value(int64(query.App.Volume.SizeGb)),
+		Appid:  types.StringValue(data.Appid.ValueString()),
+		Region: types.StringValue(query.App.Volume.Region),
+		// Internalid: types.StringValue(query.App.Volume.InternalId),
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -141,21 +151,22 @@ func (vr flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 }
 
-func (vr flyVolumeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *flyVolumeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.Diagnostics.AddError("The fly api does not allow updating volumes once created", "Try deleting and then recreating a volume with new options")
 	return
 }
 
-func (vr flyVolumeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *flyVolumeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data flyVolumeResourceData
 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	if !data.Id.Unknown && !data.Id.Null && data.Id.Value != "" {
-		_, err := graphql.DeleteVolume(context.Background(), *vr.provider.client, data.Id.Value)
+	if !data.Id.IsUnknown() && !data.Id.IsNull() && data.Id.ValueString() != "" {
+		_, err := graphql.DeleteVolume(ctx, *r.client, data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Delete volume failed", err.Error())
+			return
 		}
 	}
 
