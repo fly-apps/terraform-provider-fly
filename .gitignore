@@ -38,6 +38,7 @@ website/vendor
 
 .direnv
 .envrc
+.make-overrides
 terraform-provider-fly
 infra/terraform.tfvars
 
