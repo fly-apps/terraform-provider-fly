@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"os"
@@ -9,11 +8,7 @@ import (
 )
 
 const providerConfigTemplate = `
-provider "fly" {
-  useinternaltunnel    = true
-  internaltunnelorg    = "%s"
-  internaltunnelregion = "%s"
-}
+provider "fly" {}
 `
 
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
@@ -21,8 +16,7 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 }
 
 func providerConfig() string {
-	org := os.Getenv("FLY_TF_TEST_ORG")
-	return fmt.Sprintf(providerConfigTemplate, org, regionConfig())
+	return providerConfigTemplate
 }
 
 func regionConfig() string {
