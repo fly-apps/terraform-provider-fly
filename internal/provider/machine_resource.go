@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -216,11 +215,7 @@ func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest,
 
 // / todo
 func (r *flyMachineResource) ValidateOpenTunnel() (bool, error) {
-	_, err := r.config.httpClient.R().Get(fmt.Sprintf("http://%s", r.config.httpEndpoint))
-	if err != nil {
-		return false, errors.New("can't connect to the api, is the tunnel open? :)")
-	}
-	return true, nil
+    return true, nil
 }
 
 func TfServicesToServices(input []TfService) []apiv1.Service {
