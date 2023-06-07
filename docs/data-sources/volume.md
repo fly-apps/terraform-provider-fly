@@ -25,5 +25,3 @@ Fly volume resource
 - `name` (String) name
 - `region` (String) region
 - `size` (Number) Size of volume in GB
-
-

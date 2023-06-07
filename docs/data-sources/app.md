@@ -38,5 +38,3 @@ data "fly_app" "example" {
 - `id` (String) The ID of this resource.
 - `ipaddresses` (List of String)
 - `status` (String)
-
-
