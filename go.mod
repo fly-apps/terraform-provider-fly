@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.15.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-testing v1.2.0
-	github.com/imroc/req/v3 v3.35.1
+	github.com/imroc/req/v3 v3.36.0
 	github.com/miekg/dns v1.1.54
 	github.com/vektah/gqlparser/v2 v2.5.1
 	golang.org/x/crypto v0.9.0
@@ -19,8 +19,10 @@ require (
 
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect
+	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
+	github.com/gaukas/godicttls v0.0.3 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -45,6 +47,7 @@ require (
 	github.com/hashicorp/terraform-registry-address v0.2.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.0.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
+	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -58,6 +61,7 @@ require (
 	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
 	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
 	github.com/quic-go/quic-go v0.35.0 // indirect
+	github.com/refraction-networking/utls v1.3.2 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
