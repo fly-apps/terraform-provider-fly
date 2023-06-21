@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	providerGraphql "github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/fly-apps/terraform-provider-fly/internal/utils"
-	"github.com/fly-apps/terraform-provider-fly/internal/wg"
 	hreq "github.com/imroc/req/v3"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -20,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+const FLY_MACHINES_ENDPOINT string = "api.machines.dev"
 
 var _ provider.Provider = &flyProvider{}
 
@@ -39,11 +39,8 @@ type flyProvider struct {
 }
 
 type flyProviderData struct {
-	FlyToken             types.String `tfsdk:"fly_api_token"`
-	FlyHttpEndpoint      types.String `tfsdk:"fly_http_endpoint"`
-	UseInternalTunnel    types.Bool   `tfsdk:"useinternaltunnel"`
-	InternalTunnelOrg    types.String `tfsdk:"internaltunnelorg"`
-	InternalTunnelRegion types.String `tfsdk:"internaltunnelregion"`
+	FlyToken        types.String `tfsdk:"fly_api_token"`
+	FlyHttpEndpoint types.String `tfsdk:"fly_http_endpoint"`
 }
 
 func (p *flyProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -83,7 +80,7 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	p.token = token
 
 	endpoint, exists := os.LookupEnv("FLY_HTTP_ENDPOINT")
-	httpEndpoint := "127.0.0.1:4280"
+	httpEndpoint := FLY_MACHINES_ENDPOINT
 	if !data.FlyHttpEndpoint.IsNull() && !data.FlyHttpEndpoint.IsUnknown() {
 		httpEndpoint = data.FlyHttpEndpoint.ValueString()
 	} else if exists {
@@ -113,21 +110,6 @@ func (p *flyProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	h := http.Client{Timeout: 60 * time.Second, Transport: &utils.Transport{UnderlyingTransport: http.DefaultTransport, Token: token, Ctx: ctx, EnableDebugTrace: enableTracing}}
 	client := graphql.NewClient("https://api.fly.io/graphql", &h)
 	p.client = &client
-
-	if data.UseInternalTunnel.ValueBool() {
-		org, err := providerGraphql.Organization(ctx, client, data.InternalTunnelOrg.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("Could not resolve organization", err.Error())
-			return
-		}
-		tunnel, err := wg.Establish(ctx, org.Organization.Id, data.InternalTunnelRegion.ValueString(), token, &client)
-		if err != nil {
-			resp.Diagnostics.AddError("failed to open internal tunnel", err.Error())
-			return
-		}
-		p.httpClient.SetDial(tunnel.NetStack().DialContext)
-		p.httpEndpoint = "_api.internal:4280"
-	}
 	p.configured = true
 
 	configForResources := ProviderConfig{
@@ -169,15 +151,6 @@ func (p *flyProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 			"fly_http_endpoint": schema.StringAttribute{
 				MarkdownDescription: "Where the provider should look to find the fly http endpoint",
 				Optional:            true,
-			},
-			"useinternaltunnel": schema.BoolAttribute{
-				Optional: true,
-			},
-			"internaltunnelorg": schema.StringAttribute{
-				Optional: true,
-			},
-			"internaltunnelregion": schema.StringAttribute{
-				Optional: true,
 			},
 		},
 	}

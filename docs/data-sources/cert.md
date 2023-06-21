@@ -27,5 +27,3 @@ Fly certificate data source
 - `dnsvalidationinstructions` (String) DnsValidationHostname
 - `dnsvalidationtarget` (String) DnsValidationTarget
 - `id` (String) ID of certificate
-
-

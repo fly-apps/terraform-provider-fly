@@ -25,5 +25,3 @@ Fly ip data source
 - `id` (String) ID of address
 - `region` (String) region
 - `type` (String) v4 or v6
-
-
