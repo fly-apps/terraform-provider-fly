@@ -213,11 +213,6 @@ func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	}
 }
 
-// / todo
-func (r *flyMachineResource) ValidateOpenTunnel() (bool, error) {
-    return true, nil
-}
-
 func TfServicesToServices(input []TfService) []apiv1.Service {
 	services := make([]apiv1.Service, 0)
 	for _, s := range input {
@@ -265,12 +260,6 @@ func ServicesToTfServices(input []apiv1.Service) []TfService {
 }
 
 func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	_, err := r.ValidateOpenTunnel()
-	if err != nil {
-		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
-		return
-	}
-
 	var data flyMachineResourceData
 
 	diags := req.Plan.Get(ctx, &data)
@@ -325,7 +314,7 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 	machineAPI := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
 
 	var newMachine apiv1.MachineResponse
-	err = machineAPI.CreateMachine(createReq, data.App.ValueString(), &newMachine)
+	err := machineAPI.CreateMachine(createReq, data.App.ValueString(), &newMachine)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
 		return
@@ -387,12 +376,6 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 }
 
 func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	_, err := r.ValidateOpenTunnel()
-	if err != nil {
-		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
-		return
-	}
-
 	var data flyMachineResourceData
 
 	diags := req.State.Get(ctx, &data)
@@ -402,7 +385,7 @@ func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	var machine apiv1.MachineResponse
 
-	_, err = machineAPI.ReadMachine(data.App.ValueString(), data.Id.ValueString(), &machine)
+	_, err := machineAPI.ReadMachine(data.App.ValueString(), data.Id.ValueString(), &machine)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
 		return
@@ -456,12 +439,6 @@ func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	_, err := r.ValidateOpenTunnel()
-	if err != nil {
-		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
-		return
-	}
-
 	var plan flyMachineResourceData
 
 	diags := req.Plan.Get(ctx, &plan)
@@ -540,7 +517,7 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	var updatedMachine apiv1.MachineResponse
 
-	err = machineApi.UpdateMachine(updateReq, state.App.ValueString(), state.Id.ValueString(), &updatedMachine)
+	err := machineApi.UpdateMachine(updateReq, state.App.ValueString(), state.Id.ValueString(), &updatedMachine)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update machine", err.Error())
 		return
@@ -599,15 +576,9 @@ func (r *flyMachineResource) Delete(ctx context.Context, req resource.DeleteRequ
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	_, err := r.ValidateOpenTunnel()
-	if err != nil {
-		resp.Diagnostics.AddError("fly wireguard tunnel must be open", err.Error())
-		return
-	}
-
 	machineApi := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
 
-	err = machineApi.DeleteMachine(data.App.ValueString(), data.Id.ValueString(), 50)
+	err := machineApi.DeleteMachine(data.App.ValueString(), data.Id.ValueString(), 50)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Machine delete failed", err.Error())
