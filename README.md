@@ -36,8 +36,3 @@ To run acceptance tests for this provider some scaffolding is required.
 4. Got to the infra directory and run `terraform apply` to create the scaffolding.
 5. You should now be able to run `make` in the repo root to run tests.
 6. (Optional) set FLY_TF_TEST_REGION in `.make-overrides` to a region closer to you
-
-
-### TODO
-
-1. Build abstraction around querying local tunnel
