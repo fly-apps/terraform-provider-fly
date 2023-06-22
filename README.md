@@ -38,9 +38,10 @@ To run acceptance tests for this provider some scaffolding is required.
 6. (Optional) set FLY_TF_TEST_REGION in `.make-overrides` to a region closer to you
 
 ### Building with Docker
-If you don't have a local Go environment, you can build in a container:
+If you do not have a local Go environment, you can build in a container. The binary will be placed in the root of the repository.
 
-```
-docker build --pull -t provider-fly:latest .
-docker run --rm --entrypoint=cat provider-fly:latest /out/terraform-provider-fly > terraform-provider-fly
-```
+If you are not building for linux, set `GOOS` and `GOARCH` environment variables appropriately.
+
+* `docker-compose up` (default, linux build)
+* `GOOS=darwin GOARCH=arm64 docker-compose up` (m1 mac)
+* `docker-compose up --build` if the version of golang has changed since the last run.
