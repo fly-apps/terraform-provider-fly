@@ -268,6 +268,7 @@ type App implements Node {
     # Returns the last _n_ elements from the list.
     last: Int
   ): IPAddressConnection!
+  sharedIpAddress: String
 
   # This object's unique key
   key: String!

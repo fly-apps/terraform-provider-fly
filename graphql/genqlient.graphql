@@ -29,6 +29,7 @@ query GetFullApp($name: String) {
                 status
             }
         }
+        sharedIpAddress
         ipAddresses {
             nodes {
                 address
