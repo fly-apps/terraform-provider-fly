@@ -3,10 +3,11 @@ package apiv1
 import (
 	"errors"
 	"fmt"
-	"github.com/Khan/genqlient/graphql"
-	hreq "github.com/imroc/req/v3"
 	"net/http"
 	"time"
+
+	"github.com/Khan/genqlient/graphql"
+	hreq "github.com/imroc/req/v3"
 )
 
 var NonceHeader = "fly-machine-lease-nonce"
@@ -25,8 +26,9 @@ type MachineMount struct {
 }
 
 type Port struct {
-	Port     int64    `json:"port"`
-	Handlers []string `json:"handlers"`
+	Port       int64    `json:"port"`
+	Handlers   []string `json:"handlers"`
+	ForceHttps bool     `json:"force_https"`
 }
 
 type Service struct {
