@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -50,19 +51,20 @@ type TfService struct {
 }
 
 type flyMachineResourceData struct {
-	Name       types.String `tfsdk:"name"`
-	Region     types.String `tfsdk:"region"`
-	Id         types.String `tfsdk:"id"`
-	PrivateIP  types.String `tfsdk:"privateip"`
-	App        types.String `tfsdk:"app"`
-	Image      types.String `tfsdk:"image"`
-	Cpus       types.Int64  `tfsdk:"cpus"`
-	MemoryMb   types.Int64  `tfsdk:"memorymb"`
-	CpuType    types.String `tfsdk:"cputype"`
-	Env        types.Map    `tfsdk:"env"`
-	Cmd        []string     `tfsdk:"cmd"`
-	Entrypoint []string     `tfsdk:"entrypoint"`
-	Exec       []string     `tfsdk:"exec"`
+	Name        types.String `tfsdk:"name"`
+	Region      types.String `tfsdk:"region"`
+	Id          types.String `tfsdk:"id"`
+	PrivateIP   types.String `tfsdk:"privateip"`
+	App         types.String `tfsdk:"app"`
+	Image       types.String `tfsdk:"image"`
+	Cpus        types.Int64  `tfsdk:"cpus"`
+	MemoryMb    types.Int64  `tfsdk:"memorymb"`
+	CpuType     types.String `tfsdk:"cputype"`
+	Env         types.Map    `tfsdk:"env"`
+	Cmd         []string     `tfsdk:"cmd"`
+	Entrypoint  []string     `tfsdk:"entrypoint"`
+	Exec        []string     `tfsdk:"exec"`
+	AutoDestroy bool         `tfsdk:"auto_destroy"`
 
 	Mounts   []TfMachineMount `tfsdk:"mounts"`
 	Services []TfService      `tfsdk:"services"`
@@ -151,6 +153,12 @@ func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
+			},
+			"auto_destroy": schema.BoolAttribute{
+				MarkdownDescription: "Optional boolean telling the Machine to destroy itself once it's complete",
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 			"mounts": schema.ListNestedAttribute{
 				MarkdownDescription: "Volume mounts",
@@ -280,6 +288,7 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 				Entrypoint: data.Entrypoint,
 				Exec:       data.Exec,
 			},
+			AutoDestroy: data.AutoDestroy,
 		},
 	}
 
@@ -333,20 +342,21 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	data = flyMachineResourceData{
-		Name:       types.StringValue(newMachine.Name),
-		Region:     types.StringValue(newMachine.Region),
-		Id:         types.StringValue(newMachine.ID),
-		App:        data.App,
-		PrivateIP:  types.StringValue(newMachine.PrivateIP),
-		Image:      types.StringValue(newMachine.Config.Image),
-		Cpus:       types.Int64Value(int64(newMachine.Config.Guest.Cpus)),
-		MemoryMb:   types.Int64Value(int64(newMachine.Config.Guest.MemoryMb)),
-		CpuType:    types.StringValue(newMachine.Config.Guest.CPUKind),
-		Cmd:        newMachine.Config.Init.Cmd,
-		Entrypoint: newMachine.Config.Init.Entrypoint,
-		Exec:       newMachine.Config.Init.Exec,
-		Env:        env,
-		Services:   tfservices,
+		Name:        types.StringValue(newMachine.Name),
+		Region:      types.StringValue(newMachine.Region),
+		Id:          types.StringValue(newMachine.ID),
+		App:         data.App,
+		PrivateIP:   types.StringValue(newMachine.PrivateIP),
+		Image:       types.StringValue(newMachine.Config.Image),
+		Cpus:        types.Int64Value(int64(newMachine.Config.Guest.Cpus)),
+		MemoryMb:    types.Int64Value(int64(newMachine.Config.Guest.MemoryMb)),
+		CpuType:     types.StringValue(newMachine.Config.Guest.CPUKind),
+		Cmd:         newMachine.Config.Init.Cmd,
+		Entrypoint:  newMachine.Config.Init.Entrypoint,
+		Exec:        newMachine.Config.Init.Exec,
+		Env:         env,
+		Services:    tfservices,
+		AutoDestroy: newMachine.Config.AutoDestroy,
 	}
 
 	if len(newMachine.Config.Mounts) > 0 {
@@ -402,20 +412,21 @@ func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	data = flyMachineResourceData{
-		Name:       types.StringValue(machine.Name),
-		Id:         types.StringValue(machine.ID),
-		Region:     types.StringValue(machine.Region),
-		App:        data.App,
-		PrivateIP:  types.StringValue(machine.PrivateIP),
-		Image:      types.StringValue(machine.Config.Image),
-		Cpus:       types.Int64Value(int64(machine.Config.Guest.Cpus)),
-		MemoryMb:   types.Int64Value(int64(machine.Config.Guest.MemoryMb)),
-		CpuType:    types.StringValue(machine.Config.Guest.CPUKind),
-		Cmd:        machine.Config.Init.Cmd,
-		Entrypoint: machine.Config.Init.Entrypoint,
-		Exec:       machine.Config.Init.Exec,
-		Env:        env,
-		Services:   tfservices,
+		Name:        types.StringValue(machine.Name),
+		Id:          types.StringValue(machine.ID),
+		Region:      types.StringValue(machine.Region),
+		App:         data.App,
+		PrivateIP:   types.StringValue(machine.PrivateIP),
+		Image:       types.StringValue(machine.Config.Image),
+		Cpus:        types.Int64Value(int64(machine.Config.Guest.Cpus)),
+		MemoryMb:    types.Int64Value(int64(machine.Config.Guest.MemoryMb)),
+		CpuType:     types.StringValue(machine.Config.Guest.CPUKind),
+		Cmd:         machine.Config.Init.Cmd,
+		Entrypoint:  machine.Config.Init.Entrypoint,
+		Exec:        machine.Config.Init.Exec,
+		Env:         env,
+		Services:    tfservices,
+		AutoDestroy: machine.Config.AutoDestroy,
 	}
 
 	if len(machine.Config.Mounts) > 0 {
@@ -477,6 +488,7 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 				Entrypoint: plan.Entrypoint,
 				Exec:       plan.Exec,
 			},
+			AutoDestroy: state.AutoDestroy,
 		},
 	}
 
@@ -530,20 +542,21 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 	tfservices := ServicesToTfServices(updatedMachine.Config.Services)
 
 	state = flyMachineResourceData{
-		Name:       types.StringValue(updatedMachine.Name),
-		Region:     types.StringValue(updatedMachine.Region),
-		Id:         types.StringValue(updatedMachine.ID),
-		App:        state.App,
-		PrivateIP:  types.StringValue(updatedMachine.PrivateIP),
-		Image:      types.StringValue(updatedMachine.Config.Image),
-		Cpus:       types.Int64Value(int64(updatedMachine.Config.Guest.Cpus)),
-		MemoryMb:   types.Int64Value(int64(updatedMachine.Config.Guest.MemoryMb)),
-		CpuType:    types.StringValue(updatedMachine.Config.Guest.CPUKind),
-		Cmd:        updatedMachine.Config.Init.Cmd,
-		Entrypoint: updatedMachine.Config.Init.Entrypoint,
-		Exec:       updatedMachine.Config.Init.Exec,
-		Env:        env,
-		Services:   tfservices,
+		Name:        types.StringValue(updatedMachine.Name),
+		Region:      types.StringValue(updatedMachine.Region),
+		Id:          types.StringValue(updatedMachine.ID),
+		App:         state.App,
+		PrivateIP:   types.StringValue(updatedMachine.PrivateIP),
+		Image:       types.StringValue(updatedMachine.Config.Image),
+		Cpus:        types.Int64Value(int64(updatedMachine.Config.Guest.Cpus)),
+		MemoryMb:    types.Int64Value(int64(updatedMachine.Config.Guest.MemoryMb)),
+		CpuType:     types.StringValue(updatedMachine.Config.Guest.CPUKind),
+		Cmd:         updatedMachine.Config.Init.Cmd,
+		Entrypoint:  updatedMachine.Config.Init.Entrypoint,
+		Exec:        updatedMachine.Config.Init.Exec,
+		Env:         env,
+		Services:    tfservices,
+		AutoDestroy: updatedMachine.Config.AutoDestroy,
 	}
 
 	if len(updatedMachine.Config.Mounts) > 0 {
