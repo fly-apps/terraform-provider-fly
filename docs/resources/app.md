@@ -27,6 +27,7 @@ resource "fly_app" "exampleApp" {
 
 ### Optional
 
+- `network` (String) Optional custom network id for the application
 - `org` (String) Optional org slug to operate upon
 
 ### Read-Only
