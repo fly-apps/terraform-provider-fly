@@ -41,11 +41,12 @@ func (r *flyAppResource) Configure(_ context.Context, req resource.ConfigureRequ
 }
 
 type flyAppResourceData struct {
-	Name   types.String `tfsdk:"name"`
-	Org    types.String `tfsdk:"org"`
-	OrgId  types.String `tfsdk:"orgid"`
-	AppUrl types.String `tfsdk:"appurl"`
-	Id     types.String `tfsdk:"id"`
+	Name    types.String `tfsdk:"name"`
+	Org     types.String `tfsdk:"org"`
+	Network types.String `tfsdk:"network"`
+	OrgId   types.String `tfsdk:"orgid"`
+	AppUrl  types.String `tfsdk:"appurl"`
+	Id      types.String `tfsdk:"id"`
 }
 
 func (r *flyAppResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -61,6 +62,11 @@ func (r *flyAppResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "Optional org slug to operate upon",
+			},
+			"network": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				MarkdownDescription: "Optional custom network id for the application",
 			},
 			"orgid": schema.StringAttribute{
 				Computed:            true,
@@ -104,18 +110,19 @@ func (r *flyAppResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 		data.OrgId = types.StringValue(org.Organization.Id)
 	}
-	mresp, err := graphql.CreateAppMutation(ctx, *r.client, data.Name.ValueString(), data.OrgId.ValueString())
+	mresp, err := graphql.CreateAppMutation(ctx, *r.client, data.Name.ValueString(), data.OrgId.ValueString(), data.Network.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Create app failed", err.Error())
 		return
 	}
 
 	data = flyAppResourceData{
-		Org:    types.StringValue(mresp.CreateApp.App.Organization.Slug),
-		OrgId:  types.StringValue(mresp.CreateApp.App.Organization.Id),
-		Name:   types.StringValue(mresp.CreateApp.App.Name),
-		AppUrl: types.StringValue(mresp.CreateApp.App.AppUrl),
-		Id:     types.StringValue(mresp.CreateApp.App.Id),
+		Org:     types.StringValue(mresp.CreateApp.App.Organization.Slug),
+		OrgId:   types.StringValue(mresp.CreateApp.App.Organization.Id),
+		Name:    types.StringValue(mresp.CreateApp.App.Name),
+		Network: types.StringValue(mresp.CreateApp.App.Network),
+		AppUrl:  types.StringValue(mresp.CreateApp.App.AppUrl),
+		Id:      types.StringValue(mresp.CreateApp.App.Id),
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -150,11 +157,12 @@ func (r *flyAppResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	data := flyAppResourceData{
-		Name:   types.StringValue(query.App.Name),
-		Org:    types.StringValue(query.App.Organization.Slug),
-		OrgId:  types.StringValue(query.App.Organization.Id),
-		AppUrl: types.StringValue(query.App.AppUrl),
-		Id:     types.StringValue(query.App.Id),
+		Name:    types.StringValue(query.App.Name),
+		Org:     types.StringValue(query.App.Organization.Slug),
+		Network: types.StringValue(query.App.Network),
+		OrgId:   types.StringValue(query.App.Organization.Id),
+		AppUrl:  types.StringValue(query.App.AppUrl),
+		Id:      types.StringValue(query.App.Id),
 	}
 
 	diags = resp.State.Set(ctx, &data)
