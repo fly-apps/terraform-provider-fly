@@ -234,7 +234,7 @@ func (a *MachineAPI) DeleteMachine(app string, id string, maxRetries int) error 
 
 func (a *MachineAPI) CreateVolume(ctx context.Context, name, app, region string, size int) (*api.Volume, error) {
 	var res api.Volume
-	_, err := a.httpClient.EnableDumpAll().R().SetContext(ctx).SetBody(api.CreateVolumeRequest{
+	_, err := a.httpClient.R().SetContext(ctx).SetBody(api.CreateVolumeRequest{
 		Name:   name,
 		Region: region,
 		SizeGb: &size,
@@ -247,7 +247,7 @@ func (a *MachineAPI) CreateVolume(ctx context.Context, name, app, region string,
 
 func (a *MachineAPI) GetVolume(ctx context.Context, id, app string) (*api.Volume, error) {
 	var res api.Volume
-	_, err := a.httpClient.EnableDumpAll().R().SetContext(ctx).SetSuccessResult(&res).Get(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
+	_, err := a.httpClient.R().SetContext(ctx).SetSuccessResult(&res).Get(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (a *MachineAPI) GetVolume(ctx context.Context, id, app string) (*api.Volume
 }
 
 func (a *MachineAPI) DeleteVolume(ctx context.Context, id, app string) error {
-	_, err := a.httpClient.EnableDumpAll().R().SetContext(ctx).Delete(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
+	_, err := a.httpClient.R().SetContext(ctx).Delete(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
 	if err != nil {
 		return err
 	}
