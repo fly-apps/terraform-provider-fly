@@ -3,9 +3,10 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
 	"regexp"
 	"strings"
+
+	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -89,11 +90,13 @@ func (r *flyVolumeResource) Create(ctx context.Context, req resource.CreateReque
 	resp.Diagnostics.Append(diags...)
 
 	machineAPI := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
-	q, err := machineAPI.CreateVolume(ctx, data.Appid.ValueString(), data.Name.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
+	q, err := machineAPI.CreateVolume(ctx, data.Name.ValueString(), data.Appid.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create volume", err.Error())
+		tflog.Warn(ctx, fmt.Sprintf("%+v", err))
 		return
 	}
+	tflog.Info(ctx, fmt.Sprintf("%+v", q))
 
 	data = flyVolumeResourceData{
 		Id:     types.StringValue(q.ID),
@@ -119,6 +122,11 @@ func (r *flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, 
 	resp.Diagnostics.Append(diags...)
 
 	id := data.Id.ValueString()
+
+	if id == "" {
+		resp.Diagnostics.AddError("Failed to read volume", "id is empty")
+		return
+	}
 	// New flaps based volumes don't have this prefix I'm pretty sure
 	if id[:4] == "vol_" {
 		// strip leading vol_ off name

@@ -19,6 +19,99 @@ type MachineAPI struct {
 	endpoint   string
 }
 
+type MachineMount struct {
+	Encrypted bool   `json:"encrypted,omitempty"`
+	Path      string `json:"path"`
+	SizeGb    int    `json:"size_gb,omitempty"`
+	Volume    string `json:"volume"`
+}
+
+type Port struct {
+	Port     int64    `json:"port"`
+	Handlers []string `json:"handlers"`
+}
+
+type Service struct {
+	Ports        []Port `json:"ports"`
+	Protocol     string `json:"protocol"`
+	InternalPort int64  `json:"internal_port"`
+}
+
+type InitConfig struct {
+	Cmd        []string `json:"cmd,omitempty"`
+	Entrypoint []string `json:"entrypoint,omitempty"`
+	Exec       []string `json:"exec,omitempty"`
+}
+
+type MachineConfig struct {
+	Image    string            `json:"image"`
+	Env      map[string]string `json:"env"`
+	Init     InitConfig        `json:"init,omitempty"`
+	Mounts   []MachineMount    `json:"mounts,omitempty"`
+	Services []Service         `json:"services"`
+	Guest    GuestConfig       `json:"guest,omitempty"`
+}
+
+type GuestConfig struct {
+	Cpus     int    `json:"cpus,omitempty"`
+	MemoryMb int    `json:"memory_mb,omitempty"`
+	CpuType  string `json:"cpu_kind,omitempty"`
+}
+
+type MachineCreateOrUpdateRequest struct {
+	Name   string        `json:"name"`
+	Region string        `json:"region"`
+	Config MachineConfig `json:"config"`
+}
+
+type MachineResponse struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	State      string `json:"state"`
+	Region     string `json:"region"`
+	InstanceID string `json:"instance_id"`
+	PrivateIP  string `json:"private_ip"`
+	Config     struct {
+		Env  map[string]string `json:"env"`
+		Init struct {
+			Exec       []string `json:"exec"`
+			Entrypoint []string `json:"entrypoint"`
+			Cmd        []string `json:"cmd"`
+			//Tty        bool        `json:"tty"`
+		} `json:"init"`
+		Image    string      `json:"image"`
+		Metadata interface{} `json:"metadata"`
+		Restart  struct {
+			Policy string `json:"policy"`
+		} `json:"restart"`
+		Services []Service      `json:"services"`
+		Mounts   []MachineMount `json:"mounts"`
+		Guest    struct {
+			CPUKind  string `json:"cpu_kind"`
+			Cpus     int    `json:"cpus"`
+			MemoryMb int    `json:"memory_mb"`
+		} `json:"guest"`
+	} `json:"config"`
+	ImageRef struct {
+		Registry   string `json:"registry"`
+		Repository string `json:"repository"`
+		Tag        string `json:"tag"`
+		Digest     string `json:"digest"`
+		Labels     struct {
+		} `json:"labels"`
+	} `json:"image_ref"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type MachineLease struct {
+	Status string `json:"status"`
+	Data   struct {
+		Nonce     string `json:"nonce"`
+		ExpiresAt int64  `json:"expires_at"`
+		Owner     string `json:"owner"`
+	}
+}
+
 func NewMachineAPI(httpClient *hreq.Client, endpoint string) *MachineAPI {
 	return &MachineAPI{
 		httpClient: httpClient,
@@ -26,16 +119,16 @@ func NewMachineAPI(httpClient *hreq.Client, endpoint string) *MachineAPI {
 	}
 }
 
-func (a *MachineAPI) LockMachine(app string, id string, timeout int) (*api.MachineLease, error) {
-	var res api.MachineLease
-	_, err := a.httpClient.R().SetSuccessResult(&res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/lease/?ttl=%d", a.endpoint, app, id, timeout))
+func (a *MachineAPI) LockMachine(app string, id string, timeout int) (*MachineLease, error) {
+	var res MachineLease
+	_, err := a.httpClient.R().SetResult(&res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/lease/?ttl=%d", a.endpoint, app, id, timeout))
 	if err != nil {
 		return nil, err
 	}
 	return &res, nil
 }
 
-func (a *MachineAPI) ReleaseMachine(lease api.MachineLease, app string, id string) error {
+func (a *MachineAPI) ReleaseMachine(lease MachineLease, app string, id string) error {
 	_, err := a.httpClient.R().SetHeader(NonceHeader, lease.Data.Nonce).Delete(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s/lease", a.endpoint, app, id))
 	if err != nil {
 		return err
@@ -49,76 +142,67 @@ func (a *MachineAPI) WaitForMachine(app string, id string, instanceID string) er
 }
 
 // CreateMachine takes a MachineCreateOrUpdateRequest and creates the requested machine in the given app and then writes the response into the `res` param
-func (a *MachineAPI) CreateMachine(req api.Machine, app string) (*api.Machine, error) {
-	var res api.Machine
-	if req.Config != nil && req.Config.Guest != nil {
-		if req.Config.Guest.CPUKind == "" {
-			req.Config.Guest.CPUKind = "shared"
-		}
-		if req.Config.Guest.CPUs == 0 {
-			req.Config.Guest.CPUs = 1
-		}
-		if req.Config.Guest.MemoryMB == 0 {
-			req.Config.Guest.MemoryMB = 256
-		}
+func (a *MachineAPI) CreateMachine(req MachineCreateOrUpdateRequest, app string, res *MachineResponse) error {
+	if req.Config.Guest.CpuType == "" {
+		req.Config.Guest.CpuType = "shared"
 	}
-	createResponse, err := a.httpClient.R().SetBody(req).SetSuccessResult(res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", a.endpoint, app))
+	if req.Config.Guest.Cpus == 0 {
+		req.Config.Guest.Cpus = 1
+	}
+	if req.Config.Guest.MemoryMb == 0 {
+		req.Config.Guest.MemoryMb = 256
+	}
+	createResponse, err := a.httpClient.R().SetBody(req).SetResult(res).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines", a.endpoint, app))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if createResponse.StatusCode != http.StatusCreated && createResponse.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("Create request failed: %s, %+v", createResponse.Status, createResponse))
+		return errors.New(fmt.Sprintf("Create request failed: %s, %+v", createResponse.Status, createResponse))
 	}
-	return &res, nil
+	return nil
 }
 
-func (a *MachineAPI) UpdateMachine(req api.Machine, app string, id string) (*api.Machine, error) {
-	var res api.Machine
-	if req.Config != nil && req.Config.Guest != nil {
-		if req.Config.Guest.CPUKind == "" {
-			req.Config.Guest.CPUKind = "shared"
-		}
-		if req.Config.Guest.CPUs == 0 {
-			req.Config.Guest.CPUs = 1
-		}
-		if req.Config.Guest.MemoryMB == 0 {
-			req.Config.Guest.MemoryMB = 256
-		}
+func (a *MachineAPI) UpdateMachine(req MachineCreateOrUpdateRequest, app string, id string, res *MachineResponse) error {
+	if req.Config.Guest.CpuType == "" {
+		req.Config.Guest.CpuType = "shared"
+	}
+	if req.Config.Guest.Cpus == 0 {
+		//You can't have a machine with no cpus
+		req.Config.Guest.Cpus = 1
+	}
+	if req.Config.Guest.MemoryMb == 0 {
+		//You can't have a machine with no memory
+		req.Config.Guest.MemoryMb = 256
 	}
 	lease, err := a.LockMachine(app, id, 30)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	reqRes, err := a.httpClient.R().SetBody(req).SetSuccessResult(&res).SetHeader(NonceHeader, lease.Data.Nonce).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", a.endpoint, app, id))
+	reqRes, err := a.httpClient.R().SetBody(req).SetResult(res).SetHeader(NonceHeader, lease.Data.Nonce).Post(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", a.endpoint, app, id))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = a.ReleaseMachine(*lease, app, id)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if reqRes.StatusCode != http.StatusCreated && reqRes.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("Update request failed: %s, %+v", reqRes.Status, reqRes))
+		return errors.New(fmt.Sprintf("Update request failed: %s, %+v", reqRes.Status, reqRes))
 	}
-	return &res, nil
+	return nil
 }
 
-func (a *MachineAPI) ReadMachine(app string, id string) (*api.Machine, error) {
-	var res api.Machine
-	_, err := a.httpClient.R().SetSuccessResult(&res).Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", a.endpoint, app, id))
-	if err != nil {
-		return nil, err
-	}
-	return &res, nil
+func (a *MachineAPI) ReadMachine(app string, id string, res *MachineResponse) (*hreq.Response, error) {
+	return a.httpClient.R().SetResult(res).Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", a.endpoint, app, id))
 }
 
 func (a *MachineAPI) DeleteMachine(app string, id string, maxRetries int) error {
 	deleted := false
 	for i := 0; i < maxRetries; i++ {
-		var machine *api.Machine
-		readResponse, err := a.httpClient.R().SetSuccessResult(&machine).Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", a.endpoint, app, id))
+		var machine MachineResponse
+		readResponse, err := a.httpClient.R().SetResult(&machine).Get(fmt.Sprintf("http://%s/v1/apps/%s/machines/%s", a.endpoint, app, id))
 		if err != nil {
 			return err
 		}
@@ -150,7 +234,7 @@ func (a *MachineAPI) DeleteMachine(app string, id string, maxRetries int) error 
 
 func (a *MachineAPI) CreateVolume(ctx context.Context, name, app, region string, size int) (*api.Volume, error) {
 	var res api.Volume
-	_, err := a.httpClient.R().SetContext(ctx).SetBody(api.CreateVolumeRequest{
+	_, err := a.httpClient.EnableDumpAll().R().SetContext(ctx).SetBody(api.CreateVolumeRequest{
 		Name:   name,
 		Region: region,
 		SizeGb: &size,
@@ -163,7 +247,7 @@ func (a *MachineAPI) CreateVolume(ctx context.Context, name, app, region string,
 
 func (a *MachineAPI) GetVolume(ctx context.Context, id, app string) (*api.Volume, error) {
 	var res api.Volume
-	_, err := a.httpClient.R().SetContext(ctx).SetSuccessResult(&res).Get(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
+	_, err := a.httpClient.EnableDumpAll().R().SetContext(ctx).SetSuccessResult(&res).Get(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +256,7 @@ func (a *MachineAPI) GetVolume(ctx context.Context, id, app string) (*api.Volume
 }
 
 func (a *MachineAPI) DeleteVolume(ctx context.Context, id, app string) error {
-	_, err := a.httpClient.R().SetContext(ctx).Delete(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
+	_, err := a.httpClient.EnableDumpAll().R().SetContext(ctx).Delete(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
 	if err != nil {
 		return err
 	}
