@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/fly-apps/terraform-provider-fly/actions/workflows/test.yml/badge.svg)](https://github.com/fly-apps/terraform-provider-fly/actions/workflows/test.yml)
 
-**This is not an officially supported or maintained project and is not a recommended method of deployment to Fly.io.**
+**This project is not currently maintained, and is not a recommended method of deployment to Fly.io.**
 
 ### Resources
 - app (stable, but apps will be deprecated soon. Begin to favor machines.)
