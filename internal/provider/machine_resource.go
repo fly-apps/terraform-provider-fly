@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/superfly/flyctl/api"
 	"strings"
 
 	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
@@ -213,30 +214,31 @@ func (r *flyMachineResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	}
 }
 
-func TfServicesToServices(input []TfService) []apiv1.Service {
-	services := make([]apiv1.Service, 0)
+func TfServicesToServices(input []TfService) []api.MachineService {
+	services := make([]api.MachineService, 0)
 	for _, s := range input {
-		var ports []apiv1.Port
+		var ports []api.MachinePort
 		for _, j := range s.Ports {
 			var handlers []string
 			for _, k := range j.Handlers {
 				handlers = append(handlers, k.ValueString())
 			}
-			ports = append(ports, apiv1.Port{
-				Port:     j.Port.ValueInt64(),
+			p := int(j.Port.ValueInt64())
+			ports = append(ports, api.MachinePort{
+				Port:     &p,
 				Handlers: handlers,
 			})
 		}
-		services = append(services, apiv1.Service{
+		services = append(services, api.MachineService{
 			Ports:        ports,
 			Protocol:     s.Protocol.ValueString(),
-			InternalPort: s.InternalPort.ValueInt64(),
+			InternalPort: int(s.InternalPort.ValueInt64()),
 		})
 	}
 	return services
 }
 
-func ServicesToTfServices(input []apiv1.Service) []TfService {
+func ServicesToTfServices(input []api.MachineService) []TfService {
 	tfservices := make([]TfService, 0)
 	for _, s := range input {
 		var tfports []TfPort
@@ -246,14 +248,14 @@ func ServicesToTfServices(input []apiv1.Service) []TfService {
 				handlers = append(handlers, types.StringValue(k))
 			}
 			tfports = append(tfports, TfPort{
-				Port:     types.Int64Value(j.Port),
+				Port:     types.Int64Value(int64(*j.Port)),
 				Handlers: handlers,
 			})
 		}
 		tfservices = append(tfservices, TfService{
 			Ports:        tfports,
 			Protocol:     types.StringValue(s.Protocol),
-			InternalPort: types.Int64Value(s.InternalPort),
+			InternalPort: types.Int64Value(int64(s.InternalPort)),
 		})
 	}
 	return tfservices
@@ -269,13 +271,13 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	services := TfServicesToServices(data.Services)
-	createReq := apiv1.MachineCreateOrUpdateRequest{
+	createReq := api.Machine{
 		Name:   data.Name.ValueString(),
 		Region: data.Region.ValueString(),
-		Config: apiv1.MachineConfig{
+		Config: &api.MachineConfig{
 			Image:    data.Image.ValueString(),
 			Services: services,
-			Init: apiv1.InitConfig{
+			Init: api.MachineInit{
 				Cmd:        data.Cmd,
 				Entrypoint: data.Entrypoint,
 				Exec:       data.Exec,
@@ -284,13 +286,13 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	if !data.Cpus.IsUnknown() {
-		createReq.Config.Guest.Cpus = int(data.Cpus.ValueInt64())
+		createReq.Config.Guest.CPUs = int(data.Cpus.ValueInt64())
 	}
 	if !data.CpuType.IsUnknown() {
-		createReq.Config.Guest.CpuType = data.CpuType.ValueString()
+		createReq.Config.Guest.CPUKind = data.CpuType.ValueString()
 	}
 	if !data.MemoryMb.IsUnknown() {
-		createReq.Config.Guest.MemoryMb = int(data.MemoryMb.ValueInt64())
+		createReq.Config.Guest.MemoryMB = int(data.MemoryMb.ValueInt64())
 	}
 
 	if !data.Env.IsUnknown() {
@@ -299,9 +301,9 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 		createReq.Config.Env = env
 	}
 	if len(data.Mounts) > 0 {
-		var mounts []apiv1.MachineMount
+		var mounts []api.MachineMount
 		for _, m := range data.Mounts {
-			mounts = append(mounts, apiv1.MachineMount{
+			mounts = append(mounts, api.MachineMount{
 				Encrypted: m.Encrypted.ValueBool(),
 				Path:      m.Path.ValueString(),
 				SizeGb:    int(m.SizeGb.ValueInt64()),
@@ -313,8 +315,7 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 
 	machineAPI := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
 
-	var newMachine apiv1.MachineResponse
-	err := machineAPI.CreateMachine(createReq, data.App.ValueString(), &newMachine)
+	newMachine, err := machineAPI.CreateMachine(createReq, data.App.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
 		return
@@ -323,33 +324,43 @@ func (r *flyMachineResource) Create(ctx context.Context, req resource.CreateRequ
 	tflog.Info(ctx, fmt.Sprintf("%+v", newMachine))
 
 	// env := utils.KVToTfMap(newMachine.Config.Env, types.StringType)
-	env, diags := types.MapValueFrom(ctx, types.StringType, newMachine.Config.Env)
+	env, diags := types.MapValueFrom(ctx, types.StringType, map[string]string{})
+	if newMachine.Config != nil {
+		env, diags = types.MapValueFrom(ctx, types.StringType, newMachine.Config.Env)
+	}
 	resp.Diagnostics.Append(diags...)
 
-	tfservices := ServicesToTfServices(newMachine.Config.Services)
+	tfservices := ServicesToTfServices([]api.MachineService{})
+	if newMachine.Config != nil {
+		tfservices = ServicesToTfServices(newMachine.Config.Services)
+	}
 
 	if data.Services == nil && len(tfservices) == 0 {
 		tfservices = nil
 	}
 
 	data = flyMachineResourceData{
-		Name:       types.StringValue(newMachine.Name),
-		Region:     types.StringValue(newMachine.Region),
-		Id:         types.StringValue(newMachine.ID),
-		App:        data.App,
-		PrivateIP:  types.StringValue(newMachine.PrivateIP),
-		Image:      types.StringValue(newMachine.Config.Image),
-		Cpus:       types.Int64Value(int64(newMachine.Config.Guest.Cpus)),
-		MemoryMb:   types.Int64Value(int64(newMachine.Config.Guest.MemoryMb)),
-		CpuType:    types.StringValue(newMachine.Config.Guest.CPUKind),
-		Cmd:        newMachine.Config.Init.Cmd,
-		Entrypoint: newMachine.Config.Init.Entrypoint,
-		Exec:       newMachine.Config.Init.Exec,
-		Env:        env,
-		Services:   tfservices,
+		Name:      types.StringValue(newMachine.Name),
+		Region:    types.StringValue(newMachine.Region),
+		Id:        types.StringValue(newMachine.ID),
+		App:       data.App,
+		PrivateIP: types.StringValue(newMachine.PrivateIP),
+		Env:       env,
+		Services:  tfservices,
 	}
 
-	if len(newMachine.Config.Mounts) > 0 {
+	if newMachine.Config != nil {
+		data.Image = types.StringValue(newMachine.Config.Image)
+		data.Cpus = types.Int64Value(int64(newMachine.Config.Guest.CPUs))
+		data.MemoryMb = types.Int64Value(int64(newMachine.Config.Guest.MemoryMB))
+		data.CpuType = types.StringValue(newMachine.Config.Guest.CPUKind)
+		data.Cmd = newMachine.Config.Init.Cmd
+		data.Entrypoint = newMachine.Config.Init.Entrypoint
+		data.Exec = newMachine.Config.Init.Exec
+
+	}
+
+	if newMachine.Config != nil && len(newMachine.Config.Mounts) > 0 {
 		var tfmounts []TfMachineMount
 		for _, m := range newMachine.Config.Mounts {
 			tfmounts = append(tfmounts, TfMachineMount{
@@ -383,9 +394,7 @@ func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	machineAPI := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
 
-	var machine apiv1.MachineResponse
-
-	_, err := machineAPI.ReadMachine(data.App.ValueString(), data.Id.ValueString(), &machine)
+	machine, err := machineAPI.ReadMachine(data.App.ValueString(), data.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create machine", err.Error())
 		return
@@ -408,8 +417,8 @@ func (r *flyMachineResource) Read(ctx context.Context, req resource.ReadRequest,
 		App:        data.App,
 		PrivateIP:  types.StringValue(machine.PrivateIP),
 		Image:      types.StringValue(machine.Config.Image),
-		Cpus:       types.Int64Value(int64(machine.Config.Guest.Cpus)),
-		MemoryMb:   types.Int64Value(int64(machine.Config.Guest.MemoryMb)),
+		Cpus:       types.Int64Value(int64(machine.Config.Guest.CPUs)),
+		MemoryMb:   types.Int64Value(int64(machine.Config.Guest.MemoryMB)),
 		CpuType:    types.StringValue(machine.Config.Guest.CPUKind),
 		Cmd:        machine.Config.Init.Cmd,
 		Entrypoint: machine.Config.Init.Entrypoint,
@@ -466,13 +475,13 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	services := TfServicesToServices(plan.Services)
 
-	updateReq := apiv1.MachineCreateOrUpdateRequest{
+	updateReq := api.Machine{
 		Name:   plan.Name.ValueString(),
 		Region: state.Region.ValueString(),
-		Config: apiv1.MachineConfig{
+		Config: &api.MachineConfig{
 			Image:    plan.Image.ValueString(),
 			Services: services,
-			Init: apiv1.InitConfig{
+			Init: api.MachineInit{
 				Cmd:        plan.Cmd,
 				Entrypoint: plan.Entrypoint,
 				Exec:       plan.Exec,
@@ -481,13 +490,13 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	if !plan.Cpus.IsUnknown() {
-		updateReq.Config.Guest.Cpus = int(plan.Cpus.ValueInt64())
+		updateReq.Config.Guest.CPUs = int(plan.Cpus.ValueInt64())
 	}
 	if !plan.CpuType.IsUnknown() {
-		updateReq.Config.Guest.CpuType = plan.CpuType.ValueString()
+		updateReq.Config.Guest.CPUKind = plan.CpuType.ValueString()
 	}
 	if !plan.MemoryMb.IsUnknown() {
-		updateReq.Config.Guest.MemoryMb = int(plan.MemoryMb.ValueInt64())
+		updateReq.Config.Guest.MemoryMB = int(plan.MemoryMb.ValueInt64())
 	}
 	if plan.Env.IsNull() {
 		env := map[string]string{}
@@ -501,9 +510,9 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	if len(plan.Mounts) > 0 {
-		var mounts []apiv1.MachineMount
+		var mounts []api.MachineMount
 		for _, m := range plan.Mounts {
-			mounts = append(mounts, apiv1.MachineMount{
+			mounts = append(mounts, api.MachineMount{
 				Encrypted: m.Encrypted.ValueBool(),
 				Path:      m.Path.ValueString(),
 				SizeGb:    int(m.SizeGb.ValueInt64()),
@@ -515,9 +524,7 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	machineApi := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
 
-	var updatedMachine apiv1.MachineResponse
-
-	err := machineApi.UpdateMachine(updateReq, state.App.ValueString(), state.Id.ValueString(), &updatedMachine)
+	updatedMachine, err := machineApi.UpdateMachine(updateReq, state.App.ValueString(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update machine", err.Error())
 		return
@@ -536,8 +543,8 @@ func (r *flyMachineResource) Update(ctx context.Context, req resource.UpdateRequ
 		App:        state.App,
 		PrivateIP:  types.StringValue(updatedMachine.PrivateIP),
 		Image:      types.StringValue(updatedMachine.Config.Image),
-		Cpus:       types.Int64Value(int64(updatedMachine.Config.Guest.Cpus)),
-		MemoryMb:   types.Int64Value(int64(updatedMachine.Config.Guest.MemoryMb)),
+		Cpus:       types.Int64Value(int64(updatedMachine.Config.Guest.CPUs)),
+		MemoryMb:   types.Int64Value(int64(updatedMachine.Config.Guest.MemoryMB)),
 		CpuType:    types.StringValue(updatedMachine.Config.Guest.CPUKind),
 		Cmd:        updatedMachine.Config.Init.Cmd,
 		Entrypoint: updatedMachine.Config.Init.Entrypoint,

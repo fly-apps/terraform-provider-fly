@@ -2,10 +2,9 @@ package provider
 
 import (
 	"context"
+	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
 	"regexp"
 
-	basegql "github.com/Khan/genqlient/graphql"
-	"github.com/fly-apps/terraform-provider-fly/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -18,7 +17,7 @@ var _ datasource.DataSource = &volumeDataSourceType{}
 var _ datasource.DataSourceWithConfigure = &appDataSourceType{}
 
 type volumeDataSourceType struct {
-	client *basegql.Client
+	config ProviderConfig
 }
 
 func NewVolumeDataSource() datasource.DataSource {
@@ -33,9 +32,7 @@ func (d *volumeDataSourceType) Configure(_ context.Context, req datasource.Confi
 	if req.ProviderData == nil {
 		return
 	}
-
-	config := req.ProviderData.(ProviderConfig)
-	d.client = config.gqclient
+	d.config = req.ProviderData.(ProviderConfig)
 }
 
 // Matches Schema
@@ -87,27 +84,27 @@ func (d *volumeDataSourceType) Read(ctx context.Context, req datasource.ReadRequ
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	// strip leading vol_ off name
-	internalId := data.Id.ValueString()[4:]
+	id := data.Id.ValueString()
+	// New flaps based volumes don't have this prefix I'm pretty sure
+	if id[:4] == "vol_" {
+		// strip leading vol_ off name
+		id = id[4:]
+	}
 	app := data.Appid.ValueString()
 
-	query, err := graphql.VolumeQuery(ctx, *d.client, app, internalId)
+	machineAPI := apiv1.NewMachineAPI(d.config.httpClient, d.config.httpEndpoint)
+	query, err := machineAPI.GetVolume(ctx, id, app)
 	if err != nil {
 		resp.Diagnostics.AddError("Query failed", err.Error())
 		return
 	}
 
-	// this query will currently still return success if it finds nothing, so check it:
-	if query.App.Volume.Id == "" {
-		resp.Diagnostics.AddError("Query failed", "Could not find matching volume")
-	}
-
 	data = volumeDataSourceOutput{
-		Id:     types.StringValue(query.App.Volume.Id),
-		Name:   types.StringValue(query.App.Volume.Name),
-		Size:   types.Int64Value(int64(query.App.Volume.SizeGb)),
-		Appid:  data.Appid,
-		Region: types.StringValue(query.App.Volume.Region),
+		Id:     types.StringValue(query.ID),
+		Name:   types.StringValue(query.Name),
+		Size:   types.Int64Value(int64(query.SizeGb)),
+		Appid:  types.StringValue(data.Appid.ValueString()),
+		Region: types.StringValue(query.Region),
 	}
 
 	if resp.Diagnostics.HasError() {
