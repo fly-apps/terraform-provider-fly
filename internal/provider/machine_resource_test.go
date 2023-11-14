@@ -2,10 +2,11 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 var app = os.Getenv("FLY_TF_TEST_APP")
@@ -308,4 +309,34 @@ resource "fly_machine" "testMachine" {
   ]
 }
 `, app, region)
+}
+
+func TestAccFlyMachineAutoDestroy(t *testing.T) {
+	t.Parallel()
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testFlyMachineWithAutoDestroySet("true"),
+				Check:  resource.TestCheckResourceAttr("fly_machine.testMachine", "auto_destroy", "true"),
+			},
+			{
+				Config: testFlyMachineWithAutoDestroySet("false"),
+				Check:  resource.TestCheckResourceAttr("fly_machine.testMachine", "auto_destroy", "false"),
+			},
+		},
+	})
+}
+
+func testFlyMachineWithAutoDestroySet(autoDestoy string) string {
+	return providerConfig() + fmt.Sprintf(`
+resource "fly_machine" "testMachine" {
+  app    = "%s"
+  region = "%s"
+  image  = "nginx"
+  auto_destroy = "%s"
+}
+
+`, app, region, autoDestoy)
 }
