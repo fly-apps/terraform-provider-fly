@@ -498,20 +498,21 @@ func (v *GetCertificateResponse) GetApp() GetCertificateApp { return v.App }
 
 // GetFullAppApp includes the requested fields of the GraphQL type App.
 type GetFullAppApp struct {
-	Name           string                                        `json:"name"`
-	Network        string                                        `json:"network"`
-	Organization   GetFullAppAppOrganization                     `json:"organization"`
-	Autoscaling    GetFullAppAppAutoscalingAutoscalingConfig     `json:"autoscaling"`
-	AppUrl         string                                        `json:"appUrl"`
-	Hostname       string                                        `json:"hostname"`
-	Id             string                                        `json:"id"`
-	Status         string                                        `json:"status"`
-	Deployed       bool                                          `json:"deployed"`
-	CurrentRelease GetFullAppAppCurrentRelease                   `json:"currentRelease"`
-	Config         GetFullAppAppConfig                           `json:"config"`
-	HealthChecks   GetFullAppAppHealthChecksCheckStateConnection `json:"healthChecks"`
-	IpAddresses    GetFullAppAppIpAddressesIPAddressConnection   `json:"ipAddresses"`
-	Role           GetFullAppAppRole                             `json:"-"`
+	Name            string                                        `json:"name"`
+	Network         string                                        `json:"network"`
+	Organization    GetFullAppAppOrganization                     `json:"organization"`
+	Autoscaling     GetFullAppAppAutoscalingAutoscalingConfig     `json:"autoscaling"`
+	AppUrl          string                                        `json:"appUrl"`
+	Hostname        string                                        `json:"hostname"`
+	Id              string                                        `json:"id"`
+	Status          string                                        `json:"status"`
+	Deployed        bool                                          `json:"deployed"`
+	CurrentRelease  GetFullAppAppCurrentRelease                   `json:"currentRelease"`
+	Config          GetFullAppAppConfig                           `json:"config"`
+	HealthChecks    GetFullAppAppHealthChecksCheckStateConnection `json:"healthChecks"`
+	SharedIpAddress string                                        `json:"sharedIpAddress"`
+	IpAddresses     GetFullAppAppIpAddressesIPAddressConnection   `json:"ipAddresses"`
+	Role            GetFullAppAppRole                             `json:"-"`
 }
 
 // GetName returns GetFullAppApp.Name, and is useful for accessing the field via an interface.
@@ -553,6 +554,9 @@ func (v *GetFullAppApp) GetConfig() GetFullAppAppConfig { return v.Config }
 func (v *GetFullAppApp) GetHealthChecks() GetFullAppAppHealthChecksCheckStateConnection {
 	return v.HealthChecks
 }
+
+// GetSharedIpAddress returns GetFullAppApp.SharedIpAddress, and is useful for accessing the field via an interface.
+func (v *GetFullAppApp) GetSharedIpAddress() string { return v.SharedIpAddress }
 
 // GetIpAddresses returns GetFullAppApp.IpAddresses, and is useful for accessing the field via an interface.
 func (v *GetFullAppApp) GetIpAddresses() GetFullAppAppIpAddressesIPAddressConnection {
@@ -620,6 +624,8 @@ type __premarshalGetFullAppApp struct {
 
 	HealthChecks GetFullAppAppHealthChecksCheckStateConnection `json:"healthChecks"`
 
+	SharedIpAddress string `json:"sharedIpAddress"`
+
 	IpAddresses GetFullAppAppIpAddressesIPAddressConnection `json:"ipAddresses"`
 
 	Role json.RawMessage `json:"role"`
@@ -648,6 +654,7 @@ func (v *GetFullAppApp) __premarshalJSON() (*__premarshalGetFullAppApp, error) {
 	retval.CurrentRelease = v.CurrentRelease
 	retval.Config = v.Config
 	retval.HealthChecks = v.HealthChecks
+	retval.SharedIpAddress = v.SharedIpAddress
 	retval.IpAddresses = v.IpAddresses
 	{
 
@@ -1915,6 +1922,7 @@ query GetFullApp ($name: String) {
 				status
 			}
 		}
+		sharedIpAddress
 		ipAddresses {
 			nodes {
 				address

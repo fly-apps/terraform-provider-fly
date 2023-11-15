@@ -38,15 +38,16 @@ func (d *appDataSourceType) Configure(_ context.Context, req datasource.Configur
 }
 
 type appDataSourceOutput struct {
-	Name           types.String `tfsdk:"name"`
-	AppUrl         types.String `tfsdk:"appurl"`
-	Hostname       types.String `tfsdk:"hostname"`
-	Id             types.String `tfsdk:"id"`
-	Status         types.String `tfsdk:"status"`
-	Deployed       types.Bool   `tfsdk:"deployed"`
-	Healthchecks   []string     `tfsdk:"healthchecks"`
-	Ipaddresses    []string     `tfsdk:"ipaddresses"`
-	Currentrelease types.String `tfsdk:"currentrelease"`
+	Name            types.String `tfsdk:"name"`
+	AppUrl          types.String `tfsdk:"appurl"`
+	Hostname        types.String `tfsdk:"hostname"`
+	Id              types.String `tfsdk:"id"`
+	Status          types.String `tfsdk:"status"`
+	Deployed        types.Bool   `tfsdk:"deployed"`
+	Healthchecks    []string     `tfsdk:"healthchecks"`
+	Ipaddresses     []string     `tfsdk:"ipaddresses"`
+	Sharedipaddress types.String `tfsdk:"sharedipaddress"`
+	Currentrelease  types.String `tfsdk:"currentrelease"`
 }
 
 func (d *appDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
@@ -81,6 +82,9 @@ func (d *appDataSourceType) Schema(_ context.Context, _ datasource.SchemaRequest
 				Computed:    true,
 				ElementType: types.StringType,
 			},
+			"sharedipaddress": schema.StringAttribute{
+				Computed: true,
+			},
 			"currentrelease": schema.StringAttribute{
 				Computed: true,
 			},
@@ -107,13 +111,14 @@ func (d *appDataSourceType) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	a := appDataSourceOutput{
-		Name:           data.Name,
-		AppUrl:         types.StringValue(queryresp.App.AppUrl),
-		Hostname:       types.StringValue(queryresp.App.Hostname),
-		Id:             types.StringValue(queryresp.App.Id),
-		Status:         types.StringValue(queryresp.App.Status),
-		Deployed:       types.BoolValue(queryresp.App.Deployed),
-		Currentrelease: types.StringValue(queryresp.App.CurrentRelease.Id),
+		Name:            data.Name,
+		AppUrl:          types.StringValue(queryresp.App.AppUrl),
+		Hostname:        types.StringValue(queryresp.App.Hostname),
+		Id:              types.StringValue(queryresp.App.Id),
+		Status:          types.StringValue(queryresp.App.Status),
+		Deployed:        types.BoolValue(queryresp.App.Deployed),
+		Sharedipaddress: types.StringValue(queryresp.App.SharedIpAddress),
+		Currentrelease:  types.StringValue(queryresp.App.CurrentRelease.Id),
 	}
 
 	for _, s := range queryresp.App.HealthChecks.Nodes {
