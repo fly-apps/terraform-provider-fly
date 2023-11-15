@@ -2,10 +2,11 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 var app = os.Getenv("FLY_TF_TEST_APP")
@@ -308,4 +309,53 @@ resource "fly_machine" "testMachine" {
   ]
 }
 `, app, region)
+}
+
+func TestAccFlyMachineWithForceHttps(t *testing.T) {
+	t.Parallel()
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testFlyMachineResourceWithForceHttps("true"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("fly_machine.testMachine", "services.0.ports.1.force_https", "true"),
+				),
+			},
+			{
+				Config: testFlyMachineResourceWithForceHttps("false"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("fly_machine.testMachine", "services.0.ports.1.force_https", "false"),
+				),
+			},
+		},
+	})
+}
+
+func testFlyMachineResourceWithForceHttps(forceHttps string) string {
+	return providerConfig() + fmt.Sprintf(`
+resource "fly_machine" "testMachine" {
+  app    = "%s"
+  region = "%s"
+  image  = "nginx:latest"
+  services = [
+    {
+      ports = [
+        {
+          port     = 443
+          handlers = ["tls", "http"]
+        },
+        {
+          port     = 80
+          handlers = ["http"]
+          force_https = "%s"
+        }
+      ]
+      "protocol" : "tcp",
+      "internal_port" : 80
+    }
+  ]
+}
+`, app, region, forceHttps)
 }
