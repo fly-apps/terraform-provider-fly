@@ -1,10 +1,12 @@
 package apiv1
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
 	hreq "github.com/imroc/req/v3"
+	"github.com/superfly/flyctl/api"
 	"net/http"
 	"time"
 )
@@ -226,6 +228,37 @@ func (a *MachineAPI) DeleteMachine(app string, id string, maxRetries int) error 
 	}
 	if !deleted {
 		return errors.New("max retries exceeded")
+	}
+	return nil
+}
+
+func (a *MachineAPI) CreateVolume(ctx context.Context, name, app, region string, size int) (*api.Volume, error) {
+	var res api.Volume
+	_, err := a.httpClient.R().SetContext(ctx).SetBody(api.CreateVolumeRequest{
+		Name:   name,
+		Region: region,
+		SizeGb: &size,
+	}).SetSuccessResult(&res).Post(fmt.Sprintf("http://%s/v1/apps/%s/volumes", a.endpoint, app))
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (a *MachineAPI) GetVolume(ctx context.Context, id, app string) (*api.Volume, error) {
+	var res api.Volume
+	_, err := a.httpClient.R().SetContext(ctx).SetSuccessResult(&res).Get(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
+	if err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func (a *MachineAPI) DeleteVolume(ctx context.Context, id, app string) error {
+	_, err := a.httpClient.R().SetContext(ctx).Delete(fmt.Sprintf("http://%s/v1/apps/%s/volumes/%s", a.endpoint, app, id))
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -44,3 +44,4 @@ infra/terraform.tfvars
 
 examples/local/
 tmp/
+.history/

@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	basegql "github.com/Khan/genqlient/graphql"
-	"github.com/fly-apps/terraform-provider-fly/graphql"
+	"github.com/fly-apps/terraform-provider-fly/pkg/apiv1"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -22,7 +22,7 @@ var _ resource.ResourceWithConfigure = &flyVolumeResource{}
 var _ resource.ResourceWithImportState = &flyVolumeResource{}
 
 type flyVolumeResource struct {
-	client *basegql.Client
+	config ProviderConfig
 }
 
 func NewVolumeResource() resource.Resource {
@@ -37,9 +37,7 @@ func (r *flyVolumeResource) Configure(_ context.Context, req resource.ConfigureR
 	if req.ProviderData == nil {
 		return
 	}
-
-	config := req.ProviderData.(ProviderConfig)
-	r.client = config.gqclient
+	r.config = req.ProviderData.(ProviderConfig)
 }
 
 type flyVolumeResourceData struct {
@@ -91,18 +89,21 @@ func (r *flyVolumeResource) Create(ctx context.Context, req resource.CreateReque
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	q, err := graphql.CreateVolume(ctx, *r.client, data.Appid.ValueString(), data.Name.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
+	machineAPI := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
+	q, err := machineAPI.CreateVolume(ctx, data.Name.ValueString(), data.Appid.ValueString(), data.Region.ValueString(), int(data.Size.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create volume", err.Error())
+		tflog.Warn(ctx, fmt.Sprintf("%+v", err))
 		return
 	}
+	tflog.Info(ctx, fmt.Sprintf("%+v", q))
 
 	data = flyVolumeResourceData{
-		Id:     types.StringValue(q.CreateVolume.Volume.Id),
-		Name:   types.StringValue(q.CreateVolume.Volume.Name),
-		Size:   types.Int64Value(int64(q.CreateVolume.Volume.SizeGb)),
+		Id:     types.StringValue(q.ID),
+		Name:   types.StringValue(q.Name),
+		Size:   types.Int64Value(int64(q.SizeGb)),
 		Appid:  types.StringValue(data.Appid.ValueString()),
-		Region: types.StringValue(q.CreateVolume.Volume.Region),
+		Region: types.StringValue(q.Region),
 	}
 
 	tflog.Info(ctx, fmt.Sprintf("%+v", data))
@@ -120,28 +121,32 @@ func (r *flyVolumeResource) Read(ctx context.Context, req resource.ReadRequest, 
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 
-	// strip leading vol_ off name
-	internalId := data.Id.ValueString()[4:]
+	id := data.Id.ValueString()
+
+	if id == "" {
+		resp.Diagnostics.AddError("Failed to read volume", "id is empty")
+		return
+	}
+	// New flaps based volumes don't have this prefix I'm pretty sure
+	if id[:4] == "vol_" {
+		// strip leading vol_ off name
+		id = id[4:]
+	}
 	app := data.Appid.ValueString()
 
-	query, err := graphql.VolumeQuery(ctx, *r.client, app, internalId)
+	machineAPI := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
+	query, err := machineAPI.GetVolume(ctx, id, app)
 	if err != nil {
-		resp.Diagnostics.AddError("Read: query failed", err.Error())
+		resp.Diagnostics.AddError("Query failed", err.Error())
 		return
 	}
 
-	// this query will currently still return success if it finds nothing, so check it:
-	if query.App.Volume.Id == "" {
-		resp.Diagnostics.AddError("Query failed", "Could not find matching volume")
-	}
-
 	data = flyVolumeResourceData{
-		Id:     types.StringValue(query.App.Volume.Id),
-		Name:   types.StringValue(query.App.Volume.Name),
-		Size:   types.Int64Value(int64(query.App.Volume.SizeGb)),
+		Id:     types.StringValue(query.ID),
+		Name:   types.StringValue(query.Name),
+		Size:   types.Int64Value(int64(query.SizeGb)),
 		Appid:  types.StringValue(data.Appid.ValueString()),
-		Region: types.StringValue(query.App.Volume.Region),
-		// Internalid: types.StringValue(query.App.Volume.InternalId),
+		Region: types.StringValue(query.Region),
 	}
 
 	diags = resp.State.Set(ctx, &data)
@@ -163,7 +168,8 @@ func (r *flyVolumeResource) Delete(ctx context.Context, req resource.DeleteReque
 	resp.Diagnostics.Append(diags...)
 
 	if !data.Id.IsUnknown() && !data.Id.IsNull() && data.Id.ValueString() != "" {
-		_, err := graphql.DeleteVolume(ctx, *r.client, data.Id.ValueString())
+		machineAPI := apiv1.NewMachineAPI(r.config.httpClient, r.config.httpEndpoint)
+		err := machineAPI.DeleteVolume(ctx, data.Appid.ValueString(), data.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Delete volume failed", err.Error())
 			return
