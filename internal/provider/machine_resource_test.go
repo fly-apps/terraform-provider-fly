@@ -134,6 +134,31 @@ func TestAccFlyMachineEmptyServices(t *testing.T) {
 	})
 }
 
+func TestAccFlyMachineEmptyServicesUpdate(t *testing.T) {
+	t.Parallel()
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testFlyMachineResourceConfig(rName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("fly_machine.testMachine", "name", rName),
+					resource.TestCheckResourceAttr("fly_machine.testMachine", "services.0.protocol", "tcp"),
+				),
+			},
+			{
+				Config: testFlyMachineResourceNoServicesConfig(rName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("fly_machine.testMachine", "name", rName),
+					resource.TestCheckNoResourceAttr("fly_machine.testMachine", "services"),
+				),
+			},
+		},
+	})
+}
+
 func testFlyMachineResourceEmptyServicesConfig(name string) string {
 	return providerConfig() + fmt.Sprintf(`
 resource "fly_machine" "testMachine" {
