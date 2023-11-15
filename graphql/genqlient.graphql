@@ -41,11 +41,12 @@ query GetFullApp($name: String) {
     }
 }
 
-mutation CreateAppMutation($name: String, $organizationId: ID!) {
-    createApp(input: {name: $name, organizationId: $organizationId}) {
+mutation CreateAppMutation($name: String, $organizationId: ID!, $network: String) {
+    createApp(input: {name: $name, organizationId: $organizationId, network: $network}) {
         app {
             id
             name
+            network
             status
             organization {
                 id

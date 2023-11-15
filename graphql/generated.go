@@ -216,6 +216,7 @@ func (v *CreateAppMutationCreateAppCreateAppPayload) GetApp() CreateAppMutationC
 type CreateAppMutationCreateAppCreateAppPayloadApp struct {
 	Id           string                                                    `json:"id"`
 	Name         string                                                    `json:"name"`
+	Network      string                                                    `json:"network"`
 	Status       string                                                    `json:"status"`
 	Organization CreateAppMutationCreateAppCreateAppPayloadAppOrganization `json:"organization"`
 	AppUrl       string                                                    `json:"appUrl"`
@@ -226,6 +227,9 @@ func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetId() string { return 
 
 // GetName returns CreateAppMutationCreateAppCreateAppPayloadApp.Name, and is useful for accessing the field via an interface.
 func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetName() string { return v.Name }
+
+// GetNetwork returns CreateAppMutationCreateAppCreateAppPayloadApp.Network, and is useful for accessing the field via an interface.
+func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetNetwork() string { return v.Network }
 
 // GetStatus returns CreateAppMutationCreateAppCreateAppPayloadApp.Status, and is useful for accessing the field via an interface.
 func (v *CreateAppMutationCreateAppCreateAppPayloadApp) GetStatus() string { return v.Status }
@@ -588,7 +592,7 @@ func (v *GetFullAppApp) UnmarshalJSON(b []byte) error {
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"Unable to unmarshal GetFullAppApp.Role: %w", err)
+					"unable to unmarshal GetFullAppApp.Role: %w", err)
 			}
 		}
 	}
@@ -658,7 +662,7 @@ func (v *GetFullAppApp) __premarshalJSON() (*__premarshalGetFullAppApp, error) {
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"Unable to marshal GetFullAppApp.Role: %w", err)
+				"unable to marshal GetFullAppApp.Role: %w", err)
 		}
 	}
 	return &retval, nil
@@ -1288,6 +1292,7 @@ func (v *__AllocateIpAddressInput) GetAddrType() IPAddressType { return v.AddrTy
 type __CreateAppMutationInput struct {
 	Name           string `json:"name"`
 	OrganizationId string `json:"organizationId"`
+	Network        string `json:"network"`
 }
 
 // GetName returns __CreateAppMutationInput.Name, and is useful for accessing the field via an interface.
@@ -1295,6 +1300,9 @@ func (v *__CreateAppMutationInput) GetName() string { return v.Name }
 
 // GetOrganizationId returns __CreateAppMutationInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__CreateAppMutationInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetNetwork returns __CreateAppMutationInput.Network, and is useful for accessing the field via an interface.
+func (v *__CreateAppMutationInput) GetNetwork() string { return v.Network }
 
 // __CreatePostgresClusterInput is used internally by genqlient
 type __CreatePostgresClusterInput struct {
@@ -1474,15 +1482,8 @@ func (v *__VolumeQueryInput) GetApp() string { return v.App }
 // GetInternal returns __VolumeQueryInput.Internal, and is useful for accessing the field via an interface.
 func (v *__VolumeQueryInput) GetInternal() string { return v.Internal }
 
-func AddCertificate(
-	ctx context.Context,
-	client graphql.Client,
-	app string,
-	hostname string,
-) (*AddCertificateResponse, error) {
-	req := &graphql.Request{
-		OpName: "AddCertificate",
-		Query: `
+// The query or mutation executed by AddCertificate.
+const AddCertificate_Operation = `
 mutation AddCertificate ($app: ID!, $hostname: String!) {
 	addCertificate(appId: $app, hostname: $hostname) {
 		certificate {
@@ -1495,7 +1496,17 @@ mutation AddCertificate ($app: ID!, $hostname: String!) {
 		}
 	}
 }
-`,
+`
+
+func AddCertificate(
+	ctx context.Context,
+	client graphql.Client,
+	app string,
+	hostname string,
+) (*AddCertificateResponse, error) {
+	req := &graphql.Request{
+		OpName: "AddCertificate",
+		Query:  AddCertificate_Operation,
 		Variables: &__AddCertificateInput{
 			App:      app,
 			Hostname: hostname,
@@ -1515,14 +1526,8 @@ mutation AddCertificate ($app: ID!, $hostname: String!) {
 	return &data, err
 }
 
-func AddWireguardPeer(
-	ctx context.Context,
-	client graphql.Client,
-	input AddWireGuardPeerInput,
-) (*AddWireguardPeerResponse, error) {
-	req := &graphql.Request{
-		OpName: "AddWireguardPeer",
-		Query: `
+// The query or mutation executed by AddWireguardPeer.
+const AddWireguardPeer_Operation = `
 mutation AddWireguardPeer ($input: AddWireGuardPeerInput!) {
 	addWireGuardPeer(input: $input) {
 		network
@@ -1531,7 +1536,16 @@ mutation AddWireguardPeer ($input: AddWireGuardPeerInput!) {
 		pubkey
 	}
 }
-`,
+`
+
+func AddWireguardPeer(
+	ctx context.Context,
+	client graphql.Client,
+	input AddWireGuardPeerInput,
+) (*AddWireguardPeerResponse, error) {
+	req := &graphql.Request{
+		OpName: "AddWireguardPeer",
+		Query:  AddWireguardPeer_Operation,
 		Variables: &__AddWireguardPeerInput{
 			Input: input,
 		},
@@ -1550,16 +1564,8 @@ mutation AddWireguardPeer ($input: AddWireGuardPeerInput!) {
 	return &data, err
 }
 
-func AllocateIpAddress(
-	ctx context.Context,
-	client graphql.Client,
-	app string,
-	region string,
-	addrType IPAddressType,
-) (*AllocateIpAddressResponse, error) {
-	req := &graphql.Request{
-		OpName: "AllocateIpAddress",
-		Query: `
+// The query or mutation executed by AllocateIpAddress.
+const AllocateIpAddress_Operation = `
 mutation AllocateIpAddress ($app: ID!, $region: String, $addrType: IPAddressType!) {
 	allocateIpAddress(input: {appId:$app,region:$region,type:$addrType}) {
 		ipAddress {
@@ -1570,7 +1576,18 @@ mutation AllocateIpAddress ($app: ID!, $region: String, $addrType: IPAddressType
 		}
 	}
 }
-`,
+`
+
+func AllocateIpAddress(
+	ctx context.Context,
+	client graphql.Client,
+	app string,
+	region string,
+	addrType IPAddressType,
+) (*AllocateIpAddressResponse, error) {
+	req := &graphql.Request{
+		OpName: "AllocateIpAddress",
+		Query:  AllocateIpAddress_Operation,
 		Variables: &__AllocateIpAddressInput{
 			App:      app,
 			Region:   region,
@@ -1591,20 +1608,14 @@ mutation AllocateIpAddress ($app: ID!, $region: String, $addrType: IPAddressType
 	return &data, err
 }
 
-func CreateAppMutation(
-	ctx context.Context,
-	client graphql.Client,
-	name string,
-	organizationId string,
-) (*CreateAppMutationResponse, error) {
-	req := &graphql.Request{
-		OpName: "CreateAppMutation",
-		Query: `
-mutation CreateAppMutation ($name: String, $organizationId: ID!) {
-	createApp(input: {name:$name,organizationId:$organizationId}) {
+// The query or mutation executed by CreateAppMutation.
+const CreateAppMutation_Operation = `
+mutation CreateAppMutation ($name: String, $organizationId: ID!, $network: String) {
+	createApp(input: {name:$name,organizationId:$organizationId,network:$network}) {
 		app {
 			id
 			name
+			network
 			status
 			organization {
 				id
@@ -1614,10 +1625,22 @@ mutation CreateAppMutation ($name: String, $organizationId: ID!) {
 		}
 	}
 }
-`,
+`
+
+func CreateAppMutation(
+	ctx context.Context,
+	client graphql.Client,
+	name string,
+	organizationId string,
+	network string,
+) (*CreateAppMutationResponse, error) {
+	req := &graphql.Request{
+		OpName: "CreateAppMutation",
+		Query:  CreateAppMutation_Operation,
 		Variables: &__CreateAppMutationInput{
 			Name:           name,
 			OrganizationId: organizationId,
+			Network:        network,
 		},
 	}
 	var err error
@@ -1634,6 +1657,19 @@ mutation CreateAppMutation ($name: String, $organizationId: ID!) {
 	return &data, err
 }
 
+// The query or mutation executed by CreatePostgresCluster.
+const CreatePostgresCluster_Operation = `
+mutation CreatePostgresCluster ($name: String, $orgid: ID!, $region: String, $password: String, $vmsize: String, $volumesize: Int, $count: Int, $imageref: String) {
+	createPostgresCluster(input: {name:$name,organizationId:$orgid,region:$region,password:$password,vmSize:$vmsize,volumeSizeGb:$volumesize,count:$count,imageRef:$imageref}) {
+		app {
+			name
+		}
+		username
+		password
+	}
+}
+`
+
 func CreatePostgresCluster(
 	ctx context.Context,
 	client graphql.Client,
@@ -1648,17 +1684,7 @@ func CreatePostgresCluster(
 ) (*CreatePostgresClusterResponse, error) {
 	req := &graphql.Request{
 		OpName: "CreatePostgresCluster",
-		Query: `
-mutation CreatePostgresCluster ($name: String, $orgid: ID!, $region: String, $password: String, $vmsize: String, $volumesize: Int, $count: Int, $imageref: String) {
-	createPostgresCluster(input: {name:$name,organizationId:$orgid,region:$region,password:$password,vmSize:$vmsize,volumeSizeGb:$volumesize,count:$count,imageRef:$imageref}) {
-		app {
-			name
-		}
-		username
-		password
-	}
-}
-`,
+		Query:  CreatePostgresCluster_Operation,
 		Variables: &__CreatePostgresClusterInput{
 			Name:       name,
 			Orgid:      orgid,
@@ -1684,17 +1710,8 @@ mutation CreatePostgresCluster ($name: String, $orgid: ID!, $region: String, $pa
 	return &data, err
 }
 
-func CreateVolume(
-	ctx context.Context,
-	client graphql.Client,
-	app string,
-	name string,
-	region string,
-	sizeGb int,
-) (*CreateVolumeResponse, error) {
-	req := &graphql.Request{
-		OpName: "CreateVolume",
-		Query: `
+// The query or mutation executed by CreateVolume.
+const CreateVolume_Operation = `
 mutation CreateVolume ($app: ID!, $name: String!, $region: String!, $sizeGb: Int!) {
 	createVolume(input: {appId:$app,name:$name,region:$region,sizeGb:$sizeGb}) {
 		volume {
@@ -1707,7 +1724,19 @@ mutation CreateVolume ($app: ID!, $name: String!, $region: String!, $sizeGb: Int
 		}
 	}
 }
-`,
+`
+
+func CreateVolume(
+	ctx context.Context,
+	client graphql.Client,
+	app string,
+	name string,
+	region string,
+	sizeGb int,
+) (*CreateVolumeResponse, error) {
+	req := &graphql.Request{
+		OpName: "CreateVolume",
+		Query:  CreateVolume_Operation,
 		Variables: &__CreateVolumeInput{
 			App:    app,
 			Name:   name,
@@ -1729,14 +1758,8 @@ mutation CreateVolume ($app: ID!, $name: String!, $region: String!, $sizeGb: Int
 	return &data, err
 }
 
-func DeleteAppMutation(
-	ctx context.Context,
-	client graphql.Client,
-	name string,
-) (*DeleteAppMutationResponse, error) {
-	req := &graphql.Request{
-		OpName: "DeleteAppMutation",
-		Query: `
+// The query or mutation executed by DeleteAppMutation.
+const DeleteAppMutation_Operation = `
 mutation DeleteAppMutation ($name: ID!) {
 	deleteApp(appId: $name) {
 		organization {
@@ -1744,7 +1767,16 @@ mutation DeleteAppMutation ($name: ID!) {
 		}
 	}
 }
-`,
+`
+
+func DeleteAppMutation(
+	ctx context.Context,
+	client graphql.Client,
+	name string,
+) (*DeleteAppMutationResponse, error) {
+	req := &graphql.Request{
+		OpName: "DeleteAppMutation",
+		Query:  DeleteAppMutation_Operation,
 		Variables: &__DeleteAppMutationInput{
 			Name: name,
 		},
@@ -1763,15 +1795,8 @@ mutation DeleteAppMutation ($name: ID!) {
 	return &data, err
 }
 
-func DeleteCertificate(
-	ctx context.Context,
-	client graphql.Client,
-	app string,
-	hostname string,
-) (*DeleteCertificateResponse, error) {
-	req := &graphql.Request{
-		OpName: "DeleteCertificate",
-		Query: `
+// The query or mutation executed by DeleteCertificate.
+const DeleteCertificate_Operation = `
 mutation DeleteCertificate ($app: ID!, $hostname: String!) {
 	deleteCertificate(appId: $app, hostname: $hostname) {
 		app {
@@ -1783,7 +1808,17 @@ mutation DeleteCertificate ($app: ID!, $hostname: String!) {
 		}
 	}
 }
-`,
+`
+
+func DeleteCertificate(
+	ctx context.Context,
+	client graphql.Client,
+	app string,
+	hostname string,
+) (*DeleteCertificateResponse, error) {
+	req := &graphql.Request{
+		OpName: "DeleteCertificate",
+		Query:  DeleteCertificate_Operation,
 		Variables: &__DeleteCertificateInput{
 			App:      app,
 			Hostname: hostname,
@@ -1803,6 +1838,15 @@ mutation DeleteCertificate ($app: ID!, $hostname: String!) {
 	return &data, err
 }
 
+// The query or mutation executed by DeleteVolume.
+const DeleteVolume_Operation = `
+mutation DeleteVolume ($volume: ID!) {
+	deleteVolume(input: {volumeId:$volume}) {
+		clientMutationId
+	}
+}
+`
+
 func DeleteVolume(
 	ctx context.Context,
 	client graphql.Client,
@@ -1810,13 +1854,7 @@ func DeleteVolume(
 ) (*DeleteVolumeResponse, error) {
 	req := &graphql.Request{
 		OpName: "DeleteVolume",
-		Query: `
-mutation DeleteVolume ($volume: ID!) {
-	deleteVolume(input: {volumeId:$volume}) {
-		clientMutationId
-	}
-}
-`,
+		Query:  DeleteVolume_Operation,
 		Variables: &__DeleteVolumeInput{
 			Volume: volume,
 		},
@@ -1835,15 +1873,8 @@ mutation DeleteVolume ($volume: ID!) {
 	return &data, err
 }
 
-func GetCertificate(
-	ctx context.Context,
-	client graphql.Client,
-	app string,
-	hostname string,
-) (*GetCertificateResponse, error) {
-	req := &graphql.Request{
-		OpName: "GetCertificate",
-		Query: `
+// The query or mutation executed by GetCertificate.
+const GetCertificate_Operation = `
 query GetCertificate ($app: String!, $hostname: String!) {
 	app(name: $app) {
 		certificate(hostname: $hostname) {
@@ -1856,7 +1887,17 @@ query GetCertificate ($app: String!, $hostname: String!) {
 		}
 	}
 }
-`,
+`
+
+func GetCertificate(
+	ctx context.Context,
+	client graphql.Client,
+	app string,
+	hostname string,
+) (*GetCertificateResponse, error) {
+	req := &graphql.Request{
+		OpName: "GetCertificate",
+		Query:  GetCertificate_Operation,
 		Variables: &__GetCertificateInput{
 			App:      app,
 			Hostname: hostname,
@@ -1876,14 +1917,8 @@ query GetCertificate ($app: String!, $hostname: String!) {
 	return &data, err
 }
 
-func GetFullApp(
-	ctx context.Context,
-	client graphql.Client,
-	name string,
-) (*GetFullAppResponse, error) {
-	req := &graphql.Request{
-		OpName: "GetFullApp",
-		Query: `
+// The query or mutation executed by GetFullApp.
+const GetFullApp_Operation = `
 query GetFullApp ($name: String) {
 	app(name: $name) {
 		name
@@ -1927,7 +1962,16 @@ query GetFullApp ($name: String) {
 		}
 	}
 }
-`,
+`
+
+func GetFullApp(
+	ctx context.Context,
+	client graphql.Client,
+	name string,
+) (*GetFullAppResponse, error) {
+	req := &graphql.Request{
+		OpName: "GetFullApp",
+		Query:  GetFullApp_Operation,
 		Variables: &__GetFullAppInput{
 			Name: name,
 		},
@@ -1946,15 +1990,8 @@ query GetFullApp ($name: String) {
 	return &data, err
 }
 
-func IpAddressQuery(
-	ctx context.Context,
-	client graphql.Client,
-	app string,
-	addr string,
-) (*IpAddressQueryResponse, error) {
-	req := &graphql.Request{
-		OpName: "IpAddressQuery",
-		Query: `
+// The query or mutation executed by IpAddressQuery.
+const IpAddressQuery_Operation = `
 query IpAddressQuery ($app: String, $addr: String!) {
 	app(name: $app) {
 		ipAddress(address: $addr) {
@@ -1965,7 +2002,17 @@ query IpAddressQuery ($app: String, $addr: String!) {
 		}
 	}
 }
-`,
+`
+
+func IpAddressQuery(
+	ctx context.Context,
+	client graphql.Client,
+	app string,
+	addr string,
+) (*IpAddressQueryResponse, error) {
+	req := &graphql.Request{
+		OpName: "IpAddressQuery",
+		Query:  IpAddressQuery_Operation,
 		Variables: &__IpAddressQueryInput{
 			App:  app,
 			Addr: addr,
@@ -1985,6 +2032,15 @@ query IpAddressQuery ($app: String, $addr: String!) {
 	return &data, err
 }
 
+// The query or mutation executed by Organization.
+const Organization_Operation = `
+query Organization ($slug: String) {
+	organization(slug: $slug) {
+		id
+	}
+}
+`
+
 func Organization(
 	ctx context.Context,
 	client graphql.Client,
@@ -1992,13 +2048,7 @@ func Organization(
 ) (*OrganizationResponse, error) {
 	req := &graphql.Request{
 		OpName: "Organization",
-		Query: `
-query Organization ($slug: String) {
-	organization(slug: $slug) {
-		id
-	}
-}
-`,
+		Query:  Organization_Operation,
 		Variables: &__OrganizationInput{
 			Slug: slug,
 		},
@@ -2017,13 +2067,8 @@ query Organization ($slug: String) {
 	return &data, err
 }
 
-func OrgsQuery(
-	ctx context.Context,
-	client graphql.Client,
-) (*OrgsQueryResponse, error) {
-	req := &graphql.Request{
-		OpName: "OrgsQuery",
-		Query: `
+// The query or mutation executed by OrgsQuery.
+const OrgsQuery_Operation = `
 query OrgsQuery {
 	organizations {
 		nodes {
@@ -2032,7 +2077,15 @@ query OrgsQuery {
 		}
 	}
 }
-`,
+`
+
+func OrgsQuery(
+	ctx context.Context,
+	client graphql.Client,
+) (*OrgsQueryResponse, error) {
+	req := &graphql.Request{
+		OpName: "OrgsQuery",
+		Query:  OrgsQuery_Operation,
 	}
 	var err error
 
@@ -2048,14 +2101,8 @@ query OrgsQuery {
 	return &data, err
 }
 
-func ReleaseIpAddress(
-	ctx context.Context,
-	client graphql.Client,
-	addressId string,
-) (*ReleaseIpAddressResponse, error) {
-	req := &graphql.Request{
-		OpName: "ReleaseIpAddress",
-		Query: `
+// The query or mutation executed by ReleaseIpAddress.
+const ReleaseIpAddress_Operation = `
 mutation ReleaseIpAddress ($addressId: ID!) {
 	releaseIpAddress(input: {ipAddressId:$addressId}) {
 		app {
@@ -2063,7 +2110,16 @@ mutation ReleaseIpAddress ($addressId: ID!) {
 		}
 	}
 }
-`,
+`
+
+func ReleaseIpAddress(
+	ctx context.Context,
+	client graphql.Client,
+	addressId string,
+) (*ReleaseIpAddressResponse, error) {
+	req := &graphql.Request{
+		OpName: "ReleaseIpAddress",
+		Query:  ReleaseIpAddress_Operation,
 		Variables: &__ReleaseIpAddressInput{
 			AddressId: addressId,
 		},
@@ -2082,14 +2138,8 @@ mutation ReleaseIpAddress ($addressId: ID!) {
 	return &data, err
 }
 
-func RemoveWireguardPeer(
-	ctx context.Context,
-	client graphql.Client,
-	input RemoveWireGuardPeerInput,
-) (*RemoveWireguardPeerResponse, error) {
-	req := &graphql.Request{
-		OpName: "RemoveWireguardPeer",
-		Query: `
+// The query or mutation executed by RemoveWireguardPeer.
+const RemoveWireguardPeer_Operation = `
 mutation RemoveWireguardPeer ($input: RemoveWireGuardPeerInput!) {
 	removeWireGuardPeer(input: $input) {
 		organization {
@@ -2097,7 +2147,16 @@ mutation RemoveWireguardPeer ($input: RemoveWireGuardPeerInput!) {
 		}
 	}
 }
-`,
+`
+
+func RemoveWireguardPeer(
+	ctx context.Context,
+	client graphql.Client,
+	input RemoveWireGuardPeerInput,
+) (*RemoveWireguardPeerResponse, error) {
+	req := &graphql.Request{
+		OpName: "RemoveWireguardPeer",
+		Query:  RemoveWireguardPeer_Operation,
 		Variables: &__RemoveWireguardPeerInput{
 			Input: input,
 		},
@@ -2116,14 +2175,8 @@ mutation RemoveWireguardPeer ($input: RemoveWireGuardPeerInput!) {
 	return &data, err
 }
 
-func SetSecrets(
-	ctx context.Context,
-	client graphql.Client,
-	input SetSecretsInput,
-) (*SetSecretsResponse, error) {
-	req := &graphql.Request{
-		OpName: "SetSecrets",
-		Query: `
+// The query or mutation executed by SetSecrets.
+const SetSecrets_Operation = `
 mutation SetSecrets ($input: SetSecretsInput!) {
 	setSecrets(input: $input) {
 		release {
@@ -2131,7 +2184,16 @@ mutation SetSecrets ($input: SetSecretsInput!) {
 		}
 	}
 }
-`,
+`
+
+func SetSecrets(
+	ctx context.Context,
+	client graphql.Client,
+	input SetSecretsInput,
+) (*SetSecretsResponse, error) {
+	req := &graphql.Request{
+		OpName: "SetSecrets",
+		Query:  SetSecrets_Operation,
 		Variables: &__SetSecretsInput{
 			Input: input,
 		},
@@ -2150,16 +2212,8 @@ mutation SetSecrets ($input: SetSecretsInput!) {
 	return &data, err
 }
 
-func UpdateAutoScaleConfigMutation(
-	ctx context.Context,
-	client graphql.Client,
-	id string,
-	regions []AutoscaleRegionConfigInput,
-	resetRegions bool,
-) (*UpdateAutoScaleConfigMutationResponse, error) {
-	req := &graphql.Request{
-		OpName: "UpdateAutoScaleConfigMutation",
-		Query: `
+// The query or mutation executed by UpdateAutoScaleConfigMutation.
+const UpdateAutoScaleConfigMutation_Operation = `
 mutation UpdateAutoScaleConfigMutation ($id: ID!, $regions: [AutoscaleRegionConfigInput!], $resetRegions: Boolean) {
 	updateAutoscaleConfig(input: {resetRegions:$resetRegions,regions:$regions,appId:$id}) {
 		app {
@@ -2172,7 +2226,18 @@ mutation UpdateAutoScaleConfigMutation ($id: ID!, $regions: [AutoscaleRegionConf
 		}
 	}
 }
-`,
+`
+
+func UpdateAutoScaleConfigMutation(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+	regions []AutoscaleRegionConfigInput,
+	resetRegions bool,
+) (*UpdateAutoScaleConfigMutationResponse, error) {
+	req := &graphql.Request{
+		OpName: "UpdateAutoScaleConfigMutation",
+		Query:  UpdateAutoScaleConfigMutation_Operation,
 		Variables: &__UpdateAutoScaleConfigMutationInput{
 			Id:           id,
 			Regions:      regions,
@@ -2193,15 +2258,8 @@ mutation UpdateAutoScaleConfigMutation ($id: ID!, $regions: [AutoscaleRegionConf
 	return &data, err
 }
 
-func VolumeQuery(
-	ctx context.Context,
-	client graphql.Client,
-	app string,
-	internal string,
-) (*VolumeQueryResponse, error) {
-	req := &graphql.Request{
-		OpName: "VolumeQuery",
-		Query: `
+// The query or mutation executed by VolumeQuery.
+const VolumeQuery_Operation = `
 query VolumeQuery ($app: String, $internal: String!) {
 	app(name: $app) {
 		volume(internalId: $internal) {
@@ -2214,7 +2272,17 @@ query VolumeQuery ($app: String, $internal: String!) {
 		}
 	}
 }
-`,
+`
+
+func VolumeQuery(
+	ctx context.Context,
+	client graphql.Client,
+	app string,
+	internal string,
+) (*VolumeQueryResponse, error) {
+	req := &graphql.Request{
+		OpName: "VolumeQuery",
+		Query:  VolumeQuery_Operation,
 		Variables: &__VolumeQueryInput{
 			App:      app,
 			Internal: internal,
